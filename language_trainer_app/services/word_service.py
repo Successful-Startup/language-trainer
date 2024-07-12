@@ -1,4 +1,4 @@
-from LanguageTrainerApp.repositories.word_repository import WordRepository
+from language_trainer_app.repositories.word_repository import WordRepository
 
 class WordService:
     @staticmethod
