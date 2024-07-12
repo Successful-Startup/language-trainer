@@ -1,5 +1,5 @@
 """
-WSGI LanguageTrainerProject for LanguageTrainerProject project.
+WSGI language_trainer_project for language_trainer_project project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'LanguageTrainerProject.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'language_trainer_project.settings')
 
 application = get_wsgi_application()

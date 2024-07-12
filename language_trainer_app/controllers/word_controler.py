@@ -1,10 +1,10 @@
-# LanguageTrainerApp/views.py
+# language_trainer_app/controllers/word_controler.py
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
-from LanguageTrainerApp.models import Word
-from LanguageTrainerApp.serializers import WordSerializer
-from LanguageTrainerApp.services import WordService
+from language_trainer_app.models import Word
+from language_trainer_app.serializers import WordSerializer
+from language_trainer_app.services import WordService
 
 class WordViewSet(viewsets.ModelViewSet):
     queryset = Word.objects.all()

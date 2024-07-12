@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Create migrations"
-python manage.py makemigrations LanguageTrainerApp
+python manage.py makemigrations language_trainer_app
 echo "=================================="
 
 echo "Migrate"

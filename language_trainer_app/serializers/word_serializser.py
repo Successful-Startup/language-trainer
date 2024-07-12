@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from LanguageTrainerApp.models.word import Word
+from language_trainer_app.models.word import Word
 
 class WordSerializer(serializers.ModelSerializer):
     class Meta:

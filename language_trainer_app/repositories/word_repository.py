@@ -1,4 +1,4 @@
-from LanguageTrainerApp.models.word import Word
+from language_trainer_app.models.word import Word
 
 class WordRepository:
     @staticmethod
