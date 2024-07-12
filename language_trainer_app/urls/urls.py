@@ -1,7 +1,7 @@
-# Desc: URL configuration for the LanguageTrainerApp
+# Desc: URL configuration for the language_trainer_app
 from django.urls import path, include
 from rest_framework.routers import SimpleRouter
-from LanguageTrainerApp.views import WordViewSet
+from language_trainer_app.controllers import WordViewSet
 
 router = SimpleRouter(trailing_slash=False)
 router.register(r'words', WordViewSet)
