@@ -1,1 +1,1 @@
-from .word_controler import WordController
+from .word_controler import WordViewSet
