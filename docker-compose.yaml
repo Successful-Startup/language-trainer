@@ -9,7 +9,7 @@ services:
     environment:
       - PG_USER=postgres
       - PG_PASSWORD=postgres
-      - PG_DB=postgres
+      - PG_DB=LanguageTrainerDb
       - PG_HOST=languagetrainerdb
       - PG_PORT=5432
     depends_on:
