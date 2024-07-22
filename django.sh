@@ -1,7 +1,9 @@
 #!/bin/bash
-echo "Create migrations"
-python manage.py makemigrations language_trainer_app
-echo "=================================="
+set -e  # Прерывание скрипта при ошибках
+
+# echo "Create migrations"
+# python manage.py makemigrations language_trainer_app
+# echo "=================================="
 
 echo "Migrate"
 python manage.py migrate
