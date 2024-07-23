@@ -1,8 +1,6 @@
-import uuid
 from django.db import models
 
 class WordForm(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     word = models.ForeignKey('Word', on_delete=models.CASCADE)
     case = models.ForeignKey('Case', on_delete=models.CASCADE)
     gender = models.ForeignKey('Gender', on_delete=models.SET_NULL, null=True)
