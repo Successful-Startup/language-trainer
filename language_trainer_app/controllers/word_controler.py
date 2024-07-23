@@ -12,12 +12,12 @@ class WordViewSet(viewsets.ModelViewSet):
 
     # GET /words
     def list(self, request):
-        queryset = Word.objects.all()
+        queryset = Word.objects.all() #TODO: Change to use service
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     # GET /words/{word_id}
-    def retrieve(self, request):
+    def retrieve(self, request): #TODO: Change to use service
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
