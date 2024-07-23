@@ -16,44 +16,36 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Case',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
             name='Gender',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
             name='PartOfSpeech',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
             name='WordNumber',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
                 ('name', models.CharField(max_length=50)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Adjective',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('adjective_nom', models.CharField(max_length=100)),
-                ('part_of_speech', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.partofspeech')),
             ],
         ),
         migrations.CreateModel(
             name='Word',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('word_nom', models.CharField(max_length=100)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
+                ('base_form', models.CharField(max_length=100)),
                 ('gender', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='language_trainer_app.gender')),
                 ('part_of_speech', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.partofspeech')),
             ],
@@ -61,7 +53,7 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='Phrase',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
                 ('phrase_start', models.CharField(max_length=200)),
                 ('valid_words', models.ManyToManyField(to='language_trainer_app.word')),
             ],
@@ -69,22 +61,11 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='WordForm',
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
                 ('word_form', models.CharField(max_length=100)),
                 ('case', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.case')),
                 ('gender', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='language_trainer_app.gender')),
                 ('word', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.word')),
-                ('number', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.wordnumber')),
-            ],
-        ),
-        migrations.CreateModel(
-            name='AdjectiveForm',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('adjective_form', models.CharField(max_length=100)),
-                ('adjective', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.adjective')),
-                ('case', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.case')),
-                ('gender', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='language_trainer_app.gender')),
                 ('number', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.wordnumber')),
             ],
         ),
