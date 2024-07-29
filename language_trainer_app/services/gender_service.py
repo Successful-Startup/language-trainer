@@ -1,8 +1,8 @@
 
-from language_trainer_app.repositories.gender_repository import GenderRepository
+from language_trainer_app.models.gender import Gender
 
 
 class GenderService:
     @staticmethod
     def get_all_genders():
-        return GenderRepository.get_all_genders()
+        return Gender.objects.all()

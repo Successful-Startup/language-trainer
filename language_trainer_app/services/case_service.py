@@ -1,8 +1,8 @@
 
-from language_trainer_app.repositories.cases_repository import CaseRepository
+from language_trainer_app.models.case import Case
 
 
 class CaseService:
     @staticmethod
     def get_all_cases():
-        return CaseRepository.get_all_cases()
+        return Case.objects.all()
