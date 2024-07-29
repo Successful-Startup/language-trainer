@@ -1,22 +1,22 @@
-from language_trainer_app.repositories.word_repository import WordRepository
+from language_trainer_app.models.word import Word
 
 class WordService:
     @staticmethod
     def get_all_words():
-        return WordRepository.get_all_words()
+        return Word.objects.all()
 
     @staticmethod
     def get_word_by_id(word_id):
-        return WordRepository.get_word_by_id(word_id)
+        return Word.objects.get(id=word_id)
 
     @staticmethod
     def create_word(word_data):
-        return WordRepository.create_word(word_data)
+        return Word.objects.create(**word_data)
 
     @staticmethod
     def update_word(word_id, word_data):
-        return WordRepository.update_word(word_id, word_data)
+        return Word.objects.get(id=word_id)
 
     @staticmethod
     def delete_word(word_id):
-        return WordRepository.delete_word(word_id)
+        return Word.objects.filter(id=word_id).delete()
