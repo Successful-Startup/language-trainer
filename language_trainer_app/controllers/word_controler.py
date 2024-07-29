@@ -12,7 +12,7 @@ class WordViewSet(viewsets.ModelViewSet):
 
     # GET /words
     def list(self, request):
-        queryset = Word.objects.all() #TODO: Change to use service
+        queryset = WordService.get_all_words() #TODO: Change to use service
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
