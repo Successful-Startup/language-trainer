@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class WordForm(models.Model):
     word = models.ForeignKey('Word', on_delete=models.CASCADE)
     case = models.ForeignKey('Case', on_delete=models.CASCADE)

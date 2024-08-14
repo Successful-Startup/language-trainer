@@ -1,5 +1,6 @@
 from language_trainer_app.models.word import Word
 
+
 class WordService:
     @staticmethod
     def get_all_words():

@@ -6,6 +6,7 @@ from language_trainer_app.models import Word
 from language_trainer_app.serializers import WordSerializer
 from language_trainer_app.services import WordService
 
+
 class WordViewSet(viewsets.ModelViewSet):
     queryset = Word.objects.all()
     serializer_class = WordSerializer
