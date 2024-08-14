@@ -2,6 +2,7 @@
 
 from django.db import migrations
 
+
 def load_initial_data(apps, schema_editor):
     Case = apps.get_model('language_trainer_app', 'Case')
     Gender = apps.get_model('language_trainer_app', 'Gender')
@@ -24,6 +25,7 @@ def load_initial_data(apps, schema_editor):
     
     for part in parts_of_speech:
         PartOfSpeech.objects.get_or_create(name=part)
+
 
 class Migration(migrations.Migration):
 
