@@ -6,6 +6,7 @@ from rest_framework import status
 from language_trainer_app.serializers.gender_serializer import GenderSerializer
 from language_trainer_app.services.gender_service import GenderService
 
+
 class GenderViewSet(viewsets.ModelViewSet):
     queryset = Gender.objects.all()
     serializer_class = GenderSerializer
