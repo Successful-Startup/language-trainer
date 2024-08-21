@@ -5,5 +5,11 @@ from .part_of_speech_serializer import PartOfSpeechSerializer
 from .word_number_serializer import WordNumberSerializer
 from .word_form_serializer import WordFormSerializer
 
-__all__ = ['WordSerializer', 'GenderSerializer', 'CaseSerializer', 'PartOfSpeechSerializer', 'WordNumberSerializer',
-           'WordFormSerializer']
+__all__ = [
+    "WordSerializer",
+    "GenderSerializer",
+    "CaseSerializer",
+    "PartOfSpeechSerializer",
+    "WordNumberSerializer",
+    "WordFormSerializer",
+]

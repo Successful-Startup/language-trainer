@@ -9,64 +9,136 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Case',
+            name="Case",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=50)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
-            name='Gender',
+            name="Gender",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=50)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
-            name='PartOfSpeech',
+            name="PartOfSpeech",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=50)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
-            name='WordNumber',
+            name="WordNumber",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=50)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("name", models.CharField(max_length=50)),
             ],
         ),
         migrations.CreateModel(
-            name='Word',
+            name="Word",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('base_form', models.CharField(max_length=100)),
-                ('gender', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='language_trainer_app.gender')),
-                ('part_of_speech', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.partofspeech')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("base_form", models.CharField(max_length=100)),
+                (
+                    "gender",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="language_trainer_app.gender",
+                    ),
+                ),
+                (
+                    "part_of_speech",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="language_trainer_app.partofspeech",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Phrase',
+            name="Phrase",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('phrase_start', models.CharField(max_length=200)),
-                ('valid_words', models.ManyToManyField(to='language_trainer_app.word')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("phrase_start", models.CharField(max_length=200)),
+                ("valid_words", models.ManyToManyField(to="language_trainer_app.word")),
             ],
         ),
         migrations.CreateModel(
-            name='WordForm',
+            name="WordForm",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False)),
-                ('word_form', models.CharField(max_length=100)),
-                ('case', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.case')),
-                ('gender', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='language_trainer_app.gender')),
-                ('word', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.word')),
-                ('number', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='language_trainer_app.wordnumber')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False
+                    ),
+                ),
+                ("word_form", models.CharField(max_length=100)),
+                (
+                    "case",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="language_trainer_app.case",
+                    ),
+                ),
+                (
+                    "gender",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="language_trainer_app.gender",
+                    ),
+                ),
+                (
+                    "word",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="language_trainer_app.word",
+                    ),
+                ),
+                (
+                    "number",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="language_trainer_app.wordnumber",
+                    ),
+                ),
             ],
         ),
     ]
