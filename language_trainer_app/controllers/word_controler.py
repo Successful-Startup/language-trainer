@@ -1,6 +1,7 @@
 # language_trainer_app/controllers/word_controler.py
 from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from rest_framework import status
 from language_trainer_app.models import Word
 from language_trainer_app.serializers import WordSerializer
@@ -13,13 +14,16 @@ class WordViewSet(viewsets.ModelViewSet):
 
     # GET /words
     def list(self, request):
-        queryset = WordService.get_all_words() #TODO: Change to use service
+        queryset = WordService.get_all_words()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     # GET /words/{word_id}
-    def retrieve(self, request): #TODO: Change to use service
-        instance = self.get_object()
+    def retrieve(self, request, pk=None):
+        try:
+            instance = WordService.get_word_by_id(pk)
+        except Word.DoesNotExist:
+            raise NotFound(detail="Word not found.", code=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
