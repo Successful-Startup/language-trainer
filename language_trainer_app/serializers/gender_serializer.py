@@ -5,4 +5,4 @@ from language_trainer_app.models.gender import Gender
 class GenderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Gender
-        fields = '__all__'
+        fields = "__all__"
