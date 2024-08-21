@@ -1,4 +1,3 @@
-
 from language_trainer_app.models.case import Case
 
 

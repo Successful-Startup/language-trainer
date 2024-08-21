@@ -6,4 +6,4 @@ from .word import Word
 from .word_form import WordForm
 from .phrase import Phrase
 
-__all__ = ['Gender', 'PartOfSpeech', 'WordNumber', 'Case', 'Word', 'WordForm', 'Phrase']
+__all__ = ["Gender", "PartOfSpeech", "WordNumber", "Case", "Word", "WordForm", "Phrase"]

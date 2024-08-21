@@ -19,5 +19,5 @@ class WordFormService:
         return WordForm.objects.get(id=word_form_id).update(**word_form_data)
 
     @staticmethod
-    def delete_word_form(word_form_id):
+    def delete_word_form(word_form_id):  # this method is not used in the controller
         return WordForm.objects.filter(id=word_form_id).delete()
