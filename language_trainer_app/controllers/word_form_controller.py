@@ -1,5 +1,6 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from rest_framework import status
 from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.serializers.word_form_serializer import WordFormSerializer
@@ -17,8 +18,11 @@ class WordFormViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # GET /word_forms/{word_form_id}
-    def retrieve(self, request):
-        instance = self.get_object()
+    def retrieve(self, request, pk=None):
+        try:
+            instance = WordFormService.get_word_form_by_id(pk)
+        except WordForm.DoesNotExist:
+            raise NotFound(detail="Word not found.", code=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -42,6 +46,7 @@ class WordFormViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         WordFormService.delete_word_form(instance.id)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 # TODO: add *args and **kwargs to methods?
 # Autocomplete suggests def create(self, request, *args, **kwargs) for example.
