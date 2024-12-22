@@ -148,10 +148,10 @@ class Migration(migrations.Migration):
                     "id",
                     models.AutoField(
                         auto_created=True, primary_key=True, serialize=False
-                    )
+                    ),
                 ),
-                ("text", models.CharField(max_length=255))
-            ]
+                ("text", models.CharField(max_length=255)),
+            ],
         ),
         migrations.CreateModel(
             name="ContextWordFormPair",
@@ -160,30 +160,30 @@ class Migration(migrations.Migration):
                     "id",
                     models.AutoField(
                         auto_created=True, primary_key=True, serialize=False
-                    )
+                    ),
                 ),
                 (
                     "context",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        to="language_trainer_app.context"
-                    )
+                        to="language_trainer_app.context",
+                    ),
                 ),
                 (
                     "adjective_form",
                     models.ForeignKey(
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        to="language_trainer_app.wordform"
-                    )
+                        to="language_trainer_app.wordform",
+                    ),
                 ),
                 (
                     "noun_form",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        to="language_trainer_app.wordform"
-                    )
-                )
-            ]
-        )
+                        to="language_trainer_app.wordform",
+                    ),
+                ),
+            ],
+        ),
     ]
