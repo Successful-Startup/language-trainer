@@ -7,10 +7,13 @@ from language_trainer_app.controllers.case_controller import CaseViewSet
 from language_trainer_app.controllers.part_of_speech_controller import (
     PartOfSpeechViewSet,
 )
+from language_trainer_app.controllers.test_controller import TestViewSet
 from language_trainer_app.controllers.word_number_controller import WordNumberViewSet
 from language_trainer_app.controllers.word_form_controller import WordFormViewSet
 from language_trainer_app.controllers.context_controller import ContextViewSet
-from language_trainer_app.controllers.context_word_form_pair_controller import ContextWordFormPairViewSet
+from language_trainer_app.controllers.context_word_form_pair_controller import (
+    ContextWordFormPairViewSet,
+)
 
 router = DefaultRouter(trailing_slash=False)
 router.register(r"words", WordViewSet)
@@ -21,7 +24,13 @@ router.register(r"wordNumber", WordNumberViewSet)
 router.register(r"wordForms", WordFormViewSet)
 router.register(r"contexts", ContextViewSet)
 router.register(r"contextWordFormPairs", ContextWordFormPairViewSet)
+router.register(r"tests", TestViewSet, basename="test")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path(
+        "tests/generate",
+        TestViewSet.as_view({"post": "generate"}),
+        name="test-generate",
+    ),
 ]

@@ -6,6 +6,7 @@ from .word_number_service import WordNumberService
 from .word_form_service import WordFormService
 from .context_service import ContextService
 from .context_word_form_pair_service import ContextWordFormPairService
+from .test_generator_service import TestGeneratorService
 
 __all__ = [
     "WordService",
@@ -16,4 +17,5 @@ __all__ = [
     "WordFormService",
     "ContextService",
     "ContextWordFormPairService",
+    "TestGeneratorService",
 ]
