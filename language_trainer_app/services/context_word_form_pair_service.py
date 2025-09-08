@@ -41,13 +41,18 @@ class ContextWordFormPairService:
             noun_form__number__in=numbers,
         )
 
-        # 2. Если нужно использовать прилагательное, добавляем фильтр по прилагательным
+        # 2. Фильтруем по использованию прилагательного
         if use_adjective:
+            # Если нужны прилагательные, берем только пары с adjective_form и проверяем их параметры
             query = query.filter(
+                adjective_form__isnull=False,
                 adjective_form__gender__in=genders,
                 adjective_form__case__in=cases,
                 adjective_form__number__in=numbers,
             )
+        else:
+            # Если прилагательные НЕ нужны, берем только пары БЕЗ adjective_form
+            query = query.filter(adjective_form__isnull=True)
 
         # 3. Возвращаем список подходящих пар
         return query.all()
