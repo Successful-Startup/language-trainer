@@ -7,3 +7,4 @@ from .word_form_controller import WordFormViewSet
 from .context_controller import ContextViewSet
 from .context_word_form_pair_controller import ContextWordFormPairViewSet
 from .test_controller import TestViewSet
+from . import import_controller
