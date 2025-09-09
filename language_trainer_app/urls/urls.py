@@ -14,6 +14,7 @@ from language_trainer_app.controllers.context_controller import ContextViewSet
 from language_trainer_app.controllers.context_word_form_pair_controller import (
     ContextWordFormPairViewSet,
 )
+from language_trainer_app.controllers import import_controller
 
 router = DefaultRouter(trailing_slash=False)
 router.register(r"words", WordViewSet)
@@ -32,5 +33,17 @@ urlpatterns = [
         "tests/generate",
         TestViewSet.as_view({"post": "generate"}),
         name="test-generate",
+    ),
+    # CSV Import endpoints
+    path("api/import/words/", import_controller.import_words, name="import-words"),
+    path(
+        "api/import/contexts/",
+        import_controller.import_contexts,
+        name="import-contexts",
+    ),
+    path(
+        "api/import/word-forms/",
+        import_controller.import_word_forms,
+        name="import-word-forms",
     ),
 ]

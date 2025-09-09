@@ -40,7 +40,7 @@ class ContextWordFormPairViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     # PUT /context_word_form_pairs/{context_word_form_pair_id}
-    def update(self, request):
+    def update(self, request, pk=None):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -50,7 +50,7 @@ class ContextWordFormPairViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # DELETE /context_word_form_pairs/{context_word_form_pair_id}
-    def destroy(self, request):
+    def destroy(self, request, pk=None):
         instance = self.get_object()
         ContextWordFormPairService.delete_context_word_form_pair(instance.id)
         return Response(status=status.HTTP_204_NO_CONTENT)
