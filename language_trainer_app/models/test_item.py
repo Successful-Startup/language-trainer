@@ -1,7 +1,10 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class TestItem:
-    def __init__(self, context: str, noun_with_adjective: str, correct_answer: str):
-        self.context = context  # часть предложения до пропуска
-        self.noun_with_adjective = (
-            noun_with_adjective  # пара в скобках, например, "красивая машина"
-        )
-        self.correct_answer = correct_answer  # правильный ответ в нужном падеже, например, "красивой машине"
+    """DTO for test item returned by test generator."""
+
+    context: str  # часть предложения до пропуска
+    noun_with_adjective: str  # пара в скобках, например, "красивая машина"
+    correct_answer: str  # правильный ответ в нужном падеже, например, "красивой машине"

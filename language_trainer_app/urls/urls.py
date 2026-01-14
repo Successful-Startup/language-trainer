@@ -1,7 +1,8 @@
-# Desc: URL configuration for the language_trainer_app
+# URL configuration for the language_trainer_app
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from language_trainer_app.controllers import WordViewSet
+
+from language_trainer_app.controllers import WordViewSet, import_controller
 from language_trainer_app.controllers.gender_controller import GenderViewSet
 from language_trainer_app.controllers.case_controller import CaseViewSet
 from language_trainer_app.controllers.part_of_speech_controller import (
@@ -14,26 +15,23 @@ from language_trainer_app.controllers.context_controller import ContextViewSet
 from language_trainer_app.controllers.context_word_form_pair_controller import (
     ContextWordFormPairViewSet,
 )
-from language_trainer_app.controllers import import_controller
 
-router = DefaultRouter(trailing_slash=False)
+# Use Django standard trailing slash (True by default)
+router = DefaultRouter()
 router.register(r"words", WordViewSet)
 router.register(r"genders", GenderViewSet)
 router.register(r"cases", CaseViewSet)
-router.register(r"partOfSpeech", PartOfSpeechViewSet)
-router.register(r"wordNumber", WordNumberViewSet)
-router.register(r"wordForms", WordFormViewSet)
+router.register(r"parts-of-speech", PartOfSpeechViewSet)  # was: partOfSpeech
+router.register(r"word-numbers", WordNumberViewSet)  # was: wordNumber
+router.register(r"word-forms", WordFormViewSet)  # was: wordForms
 router.register(r"contexts", ContextViewSet)
-router.register(r"contextWordFormPairs", ContextWordFormPairViewSet)
+router.register(
+    r"context-word-form-pairs", ContextWordFormPairViewSet
+)  # was: contextWordFormPairs
 router.register(r"tests", TestViewSet, basename="test")
 
 urlpatterns = [
     path("", include(router.urls)),
-    path(
-        "tests/generate",
-        TestViewSet.as_view({"post": "generate"}),
-        name="test-generate",
-    ),
     # CSV Import endpoints
     path("api/import/words/", import_controller.import_words, name="import-words"),
     path(

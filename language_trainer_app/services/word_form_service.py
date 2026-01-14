@@ -16,7 +16,11 @@ class WordFormService:
 
     @staticmethod
     def update_word_form(word_form_id, word_form_data):
-        return WordForm.objects.get(id=word_form_id).update(**word_form_data)
+        instance = WordForm.objects.get(id=word_form_id)
+        for key, value in word_form_data.items():
+            setattr(instance, key, value)
+        instance.save()
+        return instance
 
     @staticmethod
     def delete_word_form(word_form_id):  # this method is not used in the controller
