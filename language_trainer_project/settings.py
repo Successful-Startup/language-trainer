@@ -21,12 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-+##v=cibakucxjm(me4r-zxgpq7b2-n0%^(t1je)q(m^s!!n+z"
+# In production, set DJANGO_SECRET_KEY environment variable
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-+##v=cibakucxjm(me4r-zxgpq7b2-n0%^(t1je)q(m^s!!n+z",  # fallback for development
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
@@ -128,3 +132,21 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# Django REST Framework settings
+REST_FRAMEWORK = {
+    # Default pagination
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 100,
+    # Exception handling
+    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
+    # Date/time formatting
+    "DATETIME_FORMAT": "%Y-%m-%dT%H:%M:%S%z",
+    "DATE_FORMAT": "%Y-%m-%d",
+    # Default renderer classes
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    ],
+}

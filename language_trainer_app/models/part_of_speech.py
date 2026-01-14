@@ -2,7 +2,12 @@ from django.db import models
 
 
 class PartOfSpeech(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Часть речи"
+        verbose_name_plural = "Части речи"
 
     def __str__(self):
         return self.name

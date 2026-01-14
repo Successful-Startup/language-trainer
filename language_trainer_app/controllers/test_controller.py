@@ -8,16 +8,15 @@ from language_trainer_app.serializers.test_item_serializer import TestItemSerial
 from language_trainer_app.serializers.test_parameters_serializer import (
     TestParametersSerializer,
 )
-from ..services.context_word_form_pair_service import (
-    ContextWordFormPairService,
-)
 from language_trainer_app.services.test_generator_service import TestGeneratorService
 
 
 class TestViewSet(viewsets.ViewSet):
+    """ViewSet for generating language learning tests."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.test_service = TestGeneratorService(ContextWordFormPairService())
+        self.test_service = TestGeneratorService()
 
     @action(detail=False, methods=["post"])
     def generate(self, request):
@@ -34,8 +33,6 @@ class TestViewSet(viewsets.ViewSet):
             numbers=validated_data["numbers"],
         )
 
-        # Generate up to 10 random test items
         test_items = self.test_service.generate_tests(test_params, count=10)
-        # test_items should be a list of TestItem objects
         test_item_serializer = TestItemSerializer(test_items, many=True)
         return Response(test_item_serializer.data)

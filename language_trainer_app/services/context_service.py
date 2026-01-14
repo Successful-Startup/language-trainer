@@ -16,7 +16,11 @@ class ContextService:
 
     @staticmethod
     def update_context(context_id, context_data):
-        return Context.objects.get(id=context_id).update(**context_data)
+        instance = Context.objects.get(id=context_id)
+        for key, value in context_data.items():
+            setattr(instance, key, value)
+        instance.save()
+        return instance
 
     @staticmethod
     def delete_context(context_id):

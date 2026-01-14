@@ -16,7 +16,11 @@ class WordService:
 
     @staticmethod
     def update_word(word_id, word_data):
-        return Word.objects.get(id=word_id)
+        instance = Word.objects.get(id=word_id)
+        for key, value in word_data.items():
+            setattr(instance, key, value)
+        instance.save()
+        return instance
 
     @staticmethod
     def delete_word(word_id):

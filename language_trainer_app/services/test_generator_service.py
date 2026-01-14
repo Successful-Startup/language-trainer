@@ -1,98 +1,105 @@
 import random
 from typing import List
 
+from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
 from language_trainer_app.models.test_item import TestItem
 from language_trainer_app.models.test_parameters import TestParameters
-from language_trainer_app.services.context_word_form_pair_service import (
-    ContextWordFormPairService,
-)
 
 
 class TestGeneratorService:
-    def __init__(self, context_word_form_pair_service: ContextWordFormPairService):
-        self.context_word_form_pair_service = context_word_form_pair_service
+    """Service for generating language learning tests."""
+
+    def _get_pairs_by_params(
+        self,
+        use_adjective: bool,
+        genders: List[int],
+        cases: List[int],
+        numbers: List[int],
+    ):
+        """Get ContextWordFormPair queryset filtered by test parameters."""
+        query = ContextWordFormPair.objects.filter(
+            noun_form__gender__in=genders,
+            noun_form__case__in=cases,
+            noun_form__number__in=numbers,
+        ).select_related(
+            "context",
+            "noun_form",
+            "noun_form__word",
+            "adjective_form",
+            "adjective_form__word",
+        )
+
+        if use_adjective:
+            query = query.filter(
+                adjective_form__isnull=False,
+                adjective_form__gender__in=genders,
+                adjective_form__case__in=cases,
+                adjective_form__number__in=numbers,
+            )
+        else:
+            query = query.filter(adjective_form__isnull=True)
+
+        return query
 
     def generate_test(self, test_params: TestParameters) -> TestItem:
-        # 1. Получаем список всех доступных ContextWordFormPair с учётом параметров теста
-        word_form_pairs = self.context_word_form_pair_service.get_by_params(
+        """Generate a single test item based on parameters."""
+        word_form_pairs = self._get_pairs_by_params(
             use_adjective=test_params.use_adjective,
             genders=test_params.genders,
             cases=test_params.cases,
             numbers=test_params.numbers,
         )
 
-        # 2. Случайно выбираем одну подходящую пару
-        selected_pair = random.choice(word_form_pairs)
+        word_form_pairs_list = list(word_form_pairs)
+        if not word_form_pairs_list:
+            raise ValueError(
+                "No matching word form pairs found for the given parameters"
+            )
 
-        # 3. Формируем данные для теста
-        context = selected_pair.context.text
-
-        if test_params.use_adjective:
-            # Формируем строку для отображения в скобках (например, "красивая машина")
-            noun_with_adjective = f"{selected_pair.adjective_form.word.base_form} {selected_pair.noun_form.word.base_form}"
-            # Формируем правильный ответ (например, "красивой машине")
-            correct_answer = f"{selected_pair.adjective_form.word_form} {selected_pair.noun_form.word_form}"
-        else:
-            # Формируем строку для отображения только с существительным
-            noun_with_adjective = selected_pair.noun_form.word.base_form
-            correct_answer = selected_pair.noun_form.word_form
-
-        # 4. Возвращаем объект теста
-        return TestItem(
-            context=context,
-            noun_with_adjective=noun_with_adjective,
-            correct_answer=correct_answer,
-        )
+        selected_pair = random.choice(word_form_pairs_list)
+        return self._build_test_item(selected_pair, test_params.use_adjective)
 
     def generate_tests(
         self, test_params: TestParameters, count: int = 10
     ) -> List[TestItem]:
         """Generate multiple test items based on parameters, up to the specified count."""
-        # 1. Получаем список всех доступных ContextWordFormPair с учётом параметров теста
-        word_form_pairs = self.context_word_form_pair_service.get_by_params(
+        word_form_pairs = self._get_pairs_by_params(
             use_adjective=test_params.use_adjective,
             genders=test_params.genders,
             cases=test_params.cases,
             numbers=test_params.numbers,
         )
 
-        # 2. Преобразуем QuerySet в список
         word_form_pairs_list = list(word_form_pairs)
 
-        # 3. Если нет подходящих пар, возвращаем пустой список
         if not word_form_pairs_list:
             return []
 
-        # 4. Ограничиваем количество доступными парами
-        available_count = len(word_form_pairs_list)
-        actual_count = min(count, available_count)
-
-        # 5. Случайно выбираем нужное количество уникальных пар
+        actual_count = min(count, len(word_form_pairs_list))
         selected_pairs = random.sample(word_form_pairs_list, actual_count)
 
-        # 6. Генерируем тесты для каждой выбранной пары
-        test_items = []
-        for pair in selected_pairs:
-            context = pair.context.text
+        return [
+            self._build_test_item(pair, test_params.use_adjective)
+            for pair in selected_pairs
+        ]
 
-            if test_params.use_adjective:
-                # Формируем строку для отображения в скобках (например, "красивая машина")
-                noun_with_adjective = f"{pair.adjective_form.word.base_form} {pair.noun_form.word.base_form}"
-                # Формируем правильный ответ (например, "красивой машине")
-                correct_answer = (
-                    f"{pair.adjective_form.word_form} {pair.noun_form.word_form}"
-                )
-            else:
-                # Формируем строку для отображения только с существительным
-                noun_with_adjective = pair.noun_form.word.base_form
-                correct_answer = pair.noun_form.word_form
+    def _build_test_item(self, pair, use_adjective: bool) -> TestItem:
+        """Build a TestItem from a ContextWordFormPair."""
+        context = pair.context.text
 
-            test_items.append(
-                TestItem(
-                    context=context,
-                    noun_with_adjective=noun_with_adjective,
-                    correct_answer=correct_answer,
-                )
+        if use_adjective:
+            noun_with_adjective = (
+                f"{pair.adjective_form.word.base_form} {pair.noun_form.word.base_form}"
             )
+            correct_answer = (
+                f"{pair.adjective_form.word_form} {pair.noun_form.word_form}"
+            )
+        else:
+            noun_with_adjective = pair.noun_form.word.base_form
+            correct_answer = pair.noun_form.word_form
 
-        return test_items
+        return TestItem(
+            context=context,
+            noun_with_adjective=noun_with_adjective,
+            correct_answer=correct_answer,
+        )

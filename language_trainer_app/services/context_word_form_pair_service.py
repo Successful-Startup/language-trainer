@@ -19,9 +19,11 @@ class ContextWordFormPairService:
     def update_context_word_form_pair(
         context_word_form_pair_id, context_word_form_pair_data
     ):
-        return ContextWordFormPair.objects.get(id=context_word_form_pair_id).update(
-            **context_word_form_pair_data
-        )
+        instance = ContextWordFormPair.objects.get(id=context_word_form_pair_id)
+        for key, value in context_word_form_pair_data.items():
+            setattr(instance, key, value)
+        instance.save()
+        return instance
 
     @staticmethod
     def delete_context_word_form_pair(context_word_form_pair_id):
@@ -54,5 +56,5 @@ class ContextWordFormPairService:
             # Если прилагательные НЕ нужны, берем только пары БЕЗ adjective_form
             query = query.filter(adjective_form__isnull=True)
 
-        # 3. Возвращаем список подходящих пар
-        return query.all()
+        # 3. Возвращаем QuerySet подходящих пар
+        return query
