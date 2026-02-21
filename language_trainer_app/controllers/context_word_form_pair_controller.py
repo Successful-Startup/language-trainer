@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
 from language_trainer_app.serializers.context_word_form_pair_serializer import (
@@ -17,3 +18,4 @@ class ContextWordFormPairViewSet(viewsets.ModelViewSet):
         "adjective_form__word",
     ).all()
     serializer_class = ContextWordFormPairSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]

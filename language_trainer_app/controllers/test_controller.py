@@ -1,5 +1,6 @@
 # test_controller.py
 from rest_framework import viewsets, status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
@@ -13,6 +14,8 @@ from language_trainer_app.services.test_generator_service import TestGeneratorSe
 
 class TestViewSet(viewsets.ViewSet):
     """ViewSet for generating language learning tests."""
+
+    permission_classes = [AllowAny]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

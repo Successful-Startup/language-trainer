@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.serializers.word_form_serializer import WordFormSerializer
@@ -9,3 +10,4 @@ class WordFormViewSet(viewsets.ModelViewSet):
 
     queryset = WordForm.objects.select_related("word", "case", "gender", "number").all()
     serializer_class = WordFormSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
