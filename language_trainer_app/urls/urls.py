@@ -1,6 +1,10 @@
 # URL configuration for the language_trainer_app
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
 
 from language_trainer_app.controllers import WordViewSet, import_controller
 from language_trainer_app.controllers.gender_controller import GenderViewSet
@@ -32,6 +36,9 @@ router.register(r"tests", TestViewSet, basename="test")
 
 urlpatterns = [
     path("", include(router.urls)),
+    # Authentication endpoints
+    path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # CSV Import endpoints
     path("api/import/words/", import_controller.import_words, name="import-words"),
     path(

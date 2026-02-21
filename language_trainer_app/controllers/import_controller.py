@@ -1,4 +1,5 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import IntegrityError
@@ -22,6 +23,7 @@ from language_trainer_app.utils.csv_import_utils import (
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def import_words(request):
     """
     Импорт базовых слов из CSV файла.
@@ -124,6 +126,7 @@ def import_words(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def import_contexts(request):
     """
     Импорт контекстов предложений из CSV файла.
@@ -203,6 +206,7 @@ def import_contexts(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def import_word_forms(request):
     """
     Импорт форм слов из CSV файла.
