@@ -99,6 +99,23 @@ class TestImportContextsEndpoint:
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
 
+    def test_context_text_casing_is_preserved_on_import(self, auth_client, db):
+        """Import must NOT lowercase the context text.
+
+        The API path (ContextSerializer) preserves case; the import path
+        must behave the same way so a context created via API and via
+        import are identical.
+        """
+        csv_content = "text\nВ ____ живёт семья\n"
+        f = make_csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
+        assert response.status_code == 200
+        assert response.data["created"] == 1
+        from language_trainer_app.models.context import Context
+
+        assert Context.objects.filter(text="В ____ живёт семья").exists()
+        assert not Context.objects.filter(text="в ____ живёт семья").exists()
+
 
 class TestImportWordFormsEndpoint:
     url = "/api/import/word-forms/"
