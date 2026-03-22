@@ -175,7 +175,7 @@ def import_contexts(request):
                     if "____" not in text:
                         raise ValueError("Context must contain '____' placeholder")
 
-                    _, created = Context.objects.get_or_create(text=text.lower())
+                    _, created = Context.objects.get_or_create(text=text)
                     if created:
                         created_count += 1
                     else:
