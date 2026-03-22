@@ -7,6 +7,7 @@ from .word_form_serializer import WordFormSerializer
 from .context_serializer import ContextSerializer
 from .context_word_form_pair_serializer import ContextWordFormPairSerializer
 from .test_parameters_serializer import TestParametersSerializer
+from .test_item_serializer import TestItemSerializer
 
 __all__ = [
     "WordSerializer",
@@ -18,4 +19,5 @@ __all__ = [
     "ContextSerializer",
     "ContextWordFormPairSerializer",
     "TestParametersSerializer",
+    "TestItemSerializer",
 ]
