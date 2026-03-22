@@ -7,8 +7,6 @@ from .word_form import WordForm
 from .phrase import Phrase
 from .context import Context
 from .context_word_form_pair import ContextWordFormPair
-from .test_parameters import TestParameters
-from .test_item import TestItem
 
 __all__ = [
     "Gender",
@@ -20,6 +18,4 @@ __all__ = [
     "Phrase",
     "Context",
     "ContextWordFormPair",
-    "TestParameters",
-    "TestItem",
 ]
