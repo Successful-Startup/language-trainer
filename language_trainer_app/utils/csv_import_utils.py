@@ -1,20 +1,21 @@
 """
-Утилитарные функции для CSV импорта.
-Включает валидацию файлов, поиск справочников и обработку ошибок.
+Utility functions for CSV import.
+Includes file validation, reference-object lookup, and response formatting.
 """
 
 from rest_framework.response import Response
 from rest_framework import status
 
+MAX_ERRORS = 20
+
 
 def validate_uploaded_file(request):
     """
-    Валидирует загруженный CSV файл.
+    Validate the uploaded CSV file (presence, extension, size).
 
     Returns:
-        Response с ошибкой или None если валидация прошла успешно
+        Response with error details, or None if validation passed.
     """
-    # 1. Проверка наличия файла
     if "file" not in request.FILES:
         return Response(
             {"success": False, "error": "No file provided"},
@@ -23,78 +24,65 @@ def validate_uploaded_file(request):
 
     file = request.FILES["file"]
 
-    # 2. Проверка расширения
     if not file.name.endswith(".csv"):
         return Response(
             {"success": False, "error": "File must be .csv format"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # 3. Проверка размера (10MB)
     if file.size > 10 * 1024 * 1024:
         return Response(
             {"success": False, "error": "File too large (max 10MB)"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    return None  # Нет ошибок
+    return None
 
 
 def find_reference_or_error(model, name_field, value, error_prefix):
     """
-    Найти справочник по названию или вернуть ошибку.
+    Look up a reference object by name (case-insensitive) using a DB-level query.
 
     Args:
-        model: Django модель для поиска
-        name_field: название поля для поиска (обычно 'name')
-        value: искомое значение
-        error_prefix: префикс для сообщения об ошибке
+        model: Django model to search.
+        name_field: field name to filter on (typically 'name').
+        value: the value to search for.
+        error_prefix: prefix for the error message.
 
     Returns:
-        Объект модели
+        Model instance, or None if value is falsy.
 
     Raises:
-        ValueError: если объект не найден
+        ValueError: if no matching object is found.
     """
     if not value:
         return None
 
-    try:
-        # Пробуем найти точное совпадение сначала
-        return model.objects.get(**{name_field: value})
-    except model.DoesNotExist:
-        # Если точное совпадение не найдено, пробуем case-insensitive поиск
-        # через перебор всех записей (для небольших справочников это приемлемо)
-        all_objects = model.objects.all()
-        for obj in all_objects:
-            if getattr(obj, name_field).lower() == value.lower():
-                return obj
-        # Если ничего не найдено, поднимаем исключение
+    obj = model.objects.filter(**{f"{name_field}__iexact": value}).first()
+    if obj is None:
         raise ValueError(f"{error_prefix} '{value}'")
+    return obj
 
 
 def format_import_response(total_rows, created_count, skipped_count, errors):
     """
-    Форматирует ответ импорта с ограничением количества ошибок.
+    Build the import response payload.
 
     Args:
-        total_rows: общее количество обработанных строк
-        created_count: количество созданных записей
-        skipped_count: количество пропущенных (уже существующих) записей
-        errors: список ошибок
+        total_rows: number of data rows processed.
+        created_count: number of records created.
+        skipped_count: number of records that already existed (skipped).
+        errors: list of error strings (may be longer than MAX_ERRORS).
 
     Returns:
-        dict: отформатированный ответ
+        dict suitable for a DRF Response.
     """
     error_count = len(errors)
-
-    # Ограничиваем количество ошибок в ответе (максимум 20)
-    limited_errors = errors[:20] if error_count > 20 else errors
-
-    # Если ошибок больше 20, добавляем сообщение о том, что есть еще
-    if error_count > 20:
-        remaining_errors = error_count - 20
-        limited_errors.append(f"...and {remaining_errors} more validation errors")
+    limited_errors = errors[:MAX_ERRORS]
+    if error_count > MAX_ERRORS:
+        limited_errors.append(
+            f"...and {error_count - MAX_ERRORS} more validation errors"
+        )
 
     return {
         "success": error_count == 0,
@@ -108,15 +96,15 @@ def format_import_response(total_rows, created_count, skipped_count, errors):
 
 def validate_csv_headers(csv_reader, required_headers, optional_headers=None):
     """
-    Валидирует наличие обязательных заголовков в CSV.
+    Validate that all required headers are present in the CSV.
 
     Args:
-        csv_reader: объект csv.DictReader
-        required_headers: список обязательных заголовков
-        optional_headers: список опциональных заголовков
+        csv_reader: csv.DictReader instance.
+        required_headers: list of mandatory column names.
+        optional_headers: list of optional column names (unused, kept for API compat).
 
     Returns:
-        Response с ошибкой или None если валидация прошла успешно
+        Response with error details, or None if validation passed.
     """
     if not csv_reader.fieldnames:
         return Response(
@@ -124,14 +112,10 @@ def validate_csv_headers(csv_reader, required_headers, optional_headers=None):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    missing_headers = []
-    for header in required_headers:
-        if header not in csv_reader.fieldnames:
-            missing_headers.append(header)
-
-    if missing_headers:
+    missing = [h for h in required_headers if h not in csv_reader.fieldnames]
+    if missing:
         return Response(
-            {"success": False, "error": f"Missing required headers: {missing_headers}"},
+            {"success": False, "error": f"Missing required headers: {missing}"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -140,22 +124,25 @@ def validate_csv_headers(csv_reader, required_headers, optional_headers=None):
 
 def safe_get_row_value(row, field_name, required=True):
     """
-    Безопасно получает значение из строки CSV с проверкой на пустоту.
+    Safely extract a stripped value from a CSV row dict.
 
     Args:
-        row: словарь строки CSV
-        field_name: название поля
-        required: обязательно ли поле
+        row: dict representing a CSV row.
+        field_name: column name.
+        required: if True, raises ValueError when the field is empty.
 
     Returns:
-        str: значение поля или None
+        str value (never empty when required=True), or None when the field is
+        absent/empty and required=False.
 
     Raises:
-        ValueError: если обязательное поле пустое
+        ValueError: if a required field is empty.
     """
-    value = row.get(field_name, "").strip()
+    value: str = row.get(field_name, "").strip()
 
-    if required and not value:
-        raise ValueError(f"{field_name} is required")
+    if not value:
+        if required:
+            raise ValueError(f"{field_name} is required")
+        return None
 
-    return value if value else None
+    return value
