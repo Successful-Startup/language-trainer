@@ -7,9 +7,11 @@ class ContextWordFormPair(models.Model):
     context = models.ForeignKey(
         Context, on_delete=models.CASCADE, related_name="word_form_pairs"
     )
+    # SET_NULL rather than CASCADE: deleting a WordForm should not silently
+    # remove the entire test pair — the pair becomes adjective-less instead.
     adjective_form = models.ForeignKey(
         WordForm,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="adjective_pairs",
         null=True,
         blank=True,
@@ -23,10 +25,20 @@ class ContextWordFormPair(models.Model):
         verbose_name = "Пара контекст-форма"
         verbose_name_plural = "Пары контекст-форма"
         constraints = [
+            # Standard unique constraint covers rows where adjective_form IS NOT NULL.
             models.UniqueConstraint(
                 fields=["context", "adjective_form", "noun_form"],
-                name="unique_context_word_form_pair",
-            )
+                condition=models.Q(adjective_form__isnull=False),
+                name="unique_context_word_form_pair_with_adjective",
+            ),
+            # Separate constraint for rows without an adjective (adjective_form IS NULL).
+            # PostgreSQL treats NULL != NULL in unique indexes, so without this a
+            # context could have duplicate noun-only pairs.
+            models.UniqueConstraint(
+                fields=["context", "noun_form"],
+                condition=models.Q(adjective_form__isnull=True),
+                name="unique_context_word_form_pair_without_adjective",
+            ),
         ]
 
     def __str__(self):
