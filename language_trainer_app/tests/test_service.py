@@ -44,16 +44,18 @@ class TestTestGeneratorService:
     def test_respects_count_limit(self, db, reference_data):
         """Generates at most `count` items even when more pairs exist."""
         rd = reference_data
-        word = Word.objects.create(
-            base_form="стол", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
-        )
+        # Each pair needs a distinct WordForm — use a different word per pair so
+        # the (word, case, NULL, number) unique constraint is not violated.
         for i in range(5):
+            word = Word.objects.create(
+                base_form=f"слово{i}", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+            )
             form = WordForm.objects.create(
                 word=word,
                 case=rd["case_nom"],
                 gender=None,
                 number=rd["number_sg"],
-                word_form=f"стол{i}",
+                word_form=f"слово{i}",
             )
             ctx = Context.objects.create(text=f"на ____ {i}")
             ContextWordFormPair.objects.create(
