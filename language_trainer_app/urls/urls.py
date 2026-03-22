@@ -25,13 +25,11 @@ router = DefaultRouter()
 router.register(r"words", WordViewSet)
 router.register(r"genders", GenderViewSet)
 router.register(r"cases", CaseViewSet)
-router.register(r"parts-of-speech", PartOfSpeechViewSet)  # was: partOfSpeech
-router.register(r"word-numbers", WordNumberViewSet)  # was: wordNumber
-router.register(r"word-forms", WordFormViewSet)  # was: wordForms
+router.register(r"parts-of-speech", PartOfSpeechViewSet)
+router.register(r"word-numbers", WordNumberViewSet)
+router.register(r"word-forms", WordFormViewSet)
 router.register(r"contexts", ContextViewSet)
-router.register(
-    r"context-word-form-pairs", ContextWordFormPairViewSet
-)  # was: contextWordFormPairs
+router.register(r"context-word-form-pairs", ContextWordFormPairViewSet)
 router.register(r"tests", TestViewSet, basename="test")
 
 urlpatterns = [
