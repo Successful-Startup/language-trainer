@@ -8,11 +8,11 @@ Or locally (requires Django deps):
     pytest
 """
 
-import io
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
 from language_trainer_app.models.case import Case
@@ -240,8 +240,8 @@ class TestTestGeneratorService:
 
 
 def _csv_file(content: str, filename: str = "test.csv"):
-    """Helper: wrap CSV string as an in-memory upload."""
-    return io.BytesIO(content.encode("utf-8")), filename
+    """Helper: wrap CSV string as a SimpleUploadedFile (mimics a real upload)."""
+    return SimpleUploadedFile(filename, content.encode("utf-8"), content_type="text/csv")
 
 
 class TestImportWordsEndpoint:
@@ -257,14 +257,14 @@ class TestImportWordsEndpoint:
         assert "No file provided" in response.data["error"]
 
     def test_rejects_non_csv_file(self, auth_client):
-        f = io.BytesIO(b"data")
-        response = auth_client.post(self.url, {"file": (f, "data.txt")}, format="multipart")
+        f = SimpleUploadedFile("data.txt", b"data", content_type="text/plain")
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.status_code == 400
 
     def test_successful_import(self, auth_client, reference_data):
         csv_content = "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.status_code == 200
         assert response.data["success"] is True
         assert response.data["created"] == 1
@@ -272,25 +272,23 @@ class TestImportWordsEndpoint:
 
     def test_skips_duplicate_on_reimport(self, auth_client, reference_data):
         csv_content = "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
-        f1, name = _csv_file(csv_content)
-        auth_client.post(self.url, {"file": (f1, name)}, format="multipart")
+        auth_client.post(self.url, {"file": _csv_file(csv_content)}, format="multipart")
 
-        f2, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f2, name)}, format="multipart")
+        response = auth_client.post(self.url, {"file": _csv_file(csv_content)}, format="multipart")
         assert response.data["skipped"] == 1
         assert response.data["created"] == 0
 
     def test_reports_error_for_invalid_pos(self, auth_client, reference_data):
         csv_content = "base_form,part_of_speech_name,gender_name\nдом,несуществующий,мужской\n"
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
 
     def test_missing_required_header(self, auth_client):
         csv_content = "base_form,gender_name\nдом,мужской\n"
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.status_code == 400
         assert "Missing required headers" in response.data["error"]
 
@@ -301,8 +299,8 @@ class TestImportWordsEndpoint:
             "дом,существительное,мужской\n"
             "кот,несуществующий,мужской\n"
         )
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         # First row succeeds, second fails — both should be in DB because
         # the transaction rolls back only on unhandled exceptions.
         # The import controller collects errors without re-raising, so the
@@ -320,16 +318,16 @@ class TestImportContextsEndpoint:
 
     def test_successful_import(self, auth_client, db):
         csv_content = "text\nя живу в ____\n"
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.status_code == 200
         assert response.data["created"] == 1
         assert Context.objects.filter(text="я живу в ____").exists()
 
     def test_rejects_context_without_placeholder(self, auth_client, db):
         csv_content = "text\nбез пропуска\n"
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
 
@@ -351,8 +349,8 @@ class TestImportWordFormsEndpoint:
             "word_form,case_name,form_gender_name,number_name\n"
             "дом,существительное,мужской,дом,именительный,,единственное\n"
         )
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.status_code == 200
         assert response.data["created"] == 1
 
@@ -362,8 +360,8 @@ class TestImportWordFormsEndpoint:
             "word_form,case_name,form_gender_name,number_name\n"
             "несуществующий,существительное,мужской,дом,именительный,,единственное\n"
         )
-        f, name = _csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": (f, name)}, format="multipart")
+        f = _csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
 
@@ -405,11 +403,17 @@ class TestGenerateEndpoint:
         response = api_client.post(self.url, {"use_adjective": "notabool"}, format="json")
         assert response.status_code == 400
 
-    def test_allows_anonymous_access(self, api_client, db):
+    def test_allows_anonymous_access(self, api_client, reference_data):
         """Test generation endpoint must not require authentication."""
+        rd = reference_data
         response = api_client.post(
             self.url,
-            {"use_adjective": False, "genders": [], "cases": [], "numbers": []},
+            {
+                "use_adjective": False,
+                "genders": [rd["gender_m"].id],
+                "cases": [rd["case_nom"].id],
+                "numbers": [rd["number_sg"].id],
+            },
             format="json",
         )
         assert response.status_code == 200
@@ -472,9 +476,8 @@ class TestPermissions:
         assert response.status_code == 201
 
     def test_anonymous_cannot_import(self, api_client, db):
-        csv_content = "base_form,part_of_speech_name\nдом,существительное\n"
-        f, name = _csv_file(csv_content)
+        f = _csv_file("base_form,part_of_speech_name\nдом,существительное\n")
         response = api_client.post(
-            "/api/import/words/", {"file": (f, name)}, format="multipart"
+            "/api/import/words/", {"file": f}, format="multipart"
         )
         assert response.status_code == 401

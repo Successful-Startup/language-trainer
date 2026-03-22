@@ -17,13 +17,14 @@ class TestGeneratorService:
     ):
         """Return a ContextWordFormPair queryset filtered by test parameters."""
         queryset = ContextWordFormPair.objects.filter(
-            noun_form__gender__in=genders,
+            noun_form__word__gender__in=genders,
             noun_form__case__in=cases,
             noun_form__number__in=numbers,
         ).select_related(
             "context",
             "noun_form",
             "noun_form__word",
+            "noun_form__word__gender",
             "adjective_form",
             "adjective_form__word",
         )
@@ -31,7 +32,7 @@ class TestGeneratorService:
         if use_adjective:
             queryset = queryset.filter(
                 adjective_form__isnull=False,
-                adjective_form__gender__in=genders,
+                adjective_form__word__gender__in=genders,
                 adjective_form__case__in=cases,
                 adjective_form__number__in=numbers,
             )
