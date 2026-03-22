@@ -4,8 +4,7 @@ import pytest
 
 from language_trainer_app.models.context import Context
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
-from language_trainer_app.models.test_item import TestItem
-from language_trainer_app.models.test_parameters import TestParameters
+from language_trainer_app.dtos import TestItem, TestParameters
 from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.services.test_generator_service import TestGeneratorService

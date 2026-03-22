@@ -1,8 +1,7 @@
 from typing import List
 
+from language_trainer_app.dtos import TestItem, TestParameters
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
-from language_trainer_app.models.test_item import TestItem
-from language_trainer_app.models.test_parameters import TestParameters
 
 
 class TestGeneratorService:

@@ -4,7 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from language_trainer_app.models.test_parameters import TestParameters
+from language_trainer_app.dtos import TestParameters
 from language_trainer_app.serializers.test_item_serializer import TestItemSerializer
 from language_trainer_app.serializers.test_parameters_serializer import (
     TestParametersSerializer,
