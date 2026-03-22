@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment files (never bake secrets into the image)
+.env
+*.env
+
+# Test data and docs
+test_data/
+*.md
+
+# Editor / OS artefacts
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Compiled static assets (generated at runtime)
+staticfiles/

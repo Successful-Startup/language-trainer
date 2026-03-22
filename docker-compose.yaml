@@ -1,10 +1,8 @@
-version: '3.9'
-
 services:
   languagetrainer:
     container_name: LanguageTrainer
     build: .
-    ports: 
+    ports:
       - "8000:8000"
     environment:
       - PG_USER=postgres
@@ -12,9 +10,12 @@ services:
       - PG_DB=LanguageTrainerDb
       - PG_HOST=languagetrainerdb
       - PG_PORT=5432
+      - DJANGO_DEBUG=True
     depends_on:
-      - languagetrainerdb
-      
+      languagetrainerdb:
+        condition: service_healthy
+    restart: unless-stopped
+
   languagetrainerdb:
     container_name: LanguageTrainerDb
     image: postgres:12
@@ -26,6 +27,13 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d LanguageTrainerDb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
 
 volumes:
   pgdata: {}
