@@ -36,8 +36,8 @@ language-trainer/
 └── .env.example
 ```
 
-**Architecture pattern:** `ViewSet → Service → Model`
-Business logic lives exclusively in services. ViewSets handle HTTP concerns only (request parsing, permission checking, response serialization). Never put business logic directly in ViewSets.
+**Architecture pattern:** `ViewSet → (Service) → Model`
+ViewSets handle HTTP concerns only (request parsing, permission checking, response serialization). Business logic is extracted into a service only when it is non-trivial (e.g. `TestGeneratorService`). Simple CRUD ViewSets interact with models directly — there is no mandatory service layer for every resource.
 
 ---
 
@@ -215,11 +215,7 @@ Phrase ──▶ Word (M2M: valid_words)
 
 | Service | Responsibility |
 |---|---|
-| `WordService` | CRUD for `Word` |
-| `WordFormService` | CRUD for `WordForm` |
-| `ContextService` | CRUD for `Context` |
-| `ContextWordFormPairService` | CRUD for `ContextWordFormPair`; `get_by_params()` filters pairs by gender/case/number |
-| `TestGeneratorService` | Generates `TestItem` instances from `TestParameters` using random sampling |
+| `TestGeneratorService` | Generates `TestItem` instances from `TestParameters` using random sampling via `ORDER BY RANDOM()` |
 
 ---
 
