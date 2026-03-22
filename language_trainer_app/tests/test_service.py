@@ -84,3 +84,29 @@ class TestTestGeneratorService:
         )
         result = service.generate_tests(params, count=10)
         assert result == []
+
+    def test_negative_count_returns_empty_list(self, db, full_test_data):
+        """count=-1 must return [] not all-but-last (Python slice [:−1] footgun)."""
+        rd = full_test_data
+        service = TestGeneratorService()
+        params = TestParameters(
+            use_adjective=False,
+            genders=[rd["gender_m"].id],
+            cases=[rd["case_nom"].id],
+            numbers=[rd["number_sg"].id],
+        )
+        result = service.generate_tests(params, count=-1)
+        assert result == []
+
+    def test_zero_count_returns_empty_list(self, db, full_test_data):
+        """count=0 must return []."""
+        rd = full_test_data
+        service = TestGeneratorService()
+        params = TestParameters(
+            use_adjective=False,
+            genders=[rd["gender_m"].id],
+            cases=[rd["case_nom"].id],
+            numbers=[rd["number_sg"].id],
+        )
+        result = service.generate_tests(params, count=0)
+        assert result == []

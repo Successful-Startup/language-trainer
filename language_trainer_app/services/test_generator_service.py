@@ -48,7 +48,13 @@ class TestGeneratorService:
 
         Random selection is pushed to the database via ORDER BY RANDOM() so
         that no unnecessary rows are transferred to Python.
+
+        A non-positive *count* returns an empty list immediately.
         """
+        count = max(count, 0)
+        if count == 0:
+            return []
+
         pairs = self._get_pairs_by_params(
             use_adjective=test_params.use_adjective,
             genders=test_params.genders,
