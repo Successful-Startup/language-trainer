@@ -1,4 +1,3 @@
-import random
 from typing import List
 
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
@@ -16,8 +15,8 @@ class TestGeneratorService:
         cases: List[int],
         numbers: List[int],
     ):
-        """Get ContextWordFormPair queryset filtered by test parameters."""
-        query = ContextWordFormPair.objects.filter(
+        """Return a ContextWordFormPair queryset filtered by test parameters."""
+        queryset = ContextWordFormPair.objects.filter(
             noun_form__gender__in=genders,
             noun_form__case__in=cases,
             noun_form__number__in=numbers,
@@ -30,61 +29,38 @@ class TestGeneratorService:
         )
 
         if use_adjective:
-            query = query.filter(
+            queryset = queryset.filter(
                 adjective_form__isnull=False,
                 adjective_form__gender__in=genders,
                 adjective_form__case__in=cases,
                 adjective_form__number__in=numbers,
             )
         else:
-            query = query.filter(adjective_form__isnull=True)
+            queryset = queryset.filter(adjective_form__isnull=True)
 
-        return query
-
-    def generate_test(self, test_params: TestParameters) -> TestItem:
-        """Generate a single test item based on parameters."""
-        word_form_pairs = self._get_pairs_by_params(
-            use_adjective=test_params.use_adjective,
-            genders=test_params.genders,
-            cases=test_params.cases,
-            numbers=test_params.numbers,
-        )
-
-        word_form_pairs_list = list(word_form_pairs)
-        if not word_form_pairs_list:
-            raise ValueError(
-                "No matching word form pairs found for the given parameters"
-            )
-
-        selected_pair = random.choice(word_form_pairs_list)
-        return self._build_test_item(selected_pair, test_params.use_adjective)
+        return queryset
 
     def generate_tests(
         self, test_params: TestParameters, count: int = 10
     ) -> List[TestItem]:
-        """Generate multiple test items based on parameters, up to the specified count."""
-        word_form_pairs = self._get_pairs_by_params(
+        """Generate up to *count* random test items for the given parameters.
+
+        Random selection is pushed to the database via ORDER BY RANDOM() so
+        that no unnecessary rows are transferred to Python.
+        """
+        pairs = self._get_pairs_by_params(
             use_adjective=test_params.use_adjective,
             genders=test_params.genders,
             cases=test_params.cases,
             numbers=test_params.numbers,
-        )
-
-        word_form_pairs_list = list(word_form_pairs)
-
-        if not word_form_pairs_list:
-            return []
-
-        actual_count = min(count, len(word_form_pairs_list))
-        selected_pairs = random.sample(word_form_pairs_list, actual_count)
+        ).order_by("?")[:count]
 
         return [
-            self._build_test_item(pair, test_params.use_adjective)
-            for pair in selected_pairs
+            self._build_test_item(pair, test_params.use_adjective) for pair in pairs
         ]
 
-    def _build_test_item(self, pair, use_adjective: bool) -> TestItem:
-        """Build a TestItem from a ContextWordFormPair."""
+    def _build_test_item(self, pair: ContextWordFormPair, use_adjective: bool) -> TestItem:
+        """Build a TestItem DTO from a ContextWordFormPair instance."""
         context = pair.context.text
 
         if use_adjective:
