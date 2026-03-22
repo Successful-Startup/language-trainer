@@ -128,7 +128,7 @@ def import_words(request):
             format_import_response(total_rows, created_count, skipped_count, errors)
         )
 
-    except Exception as exc:
+    except (UnicodeDecodeError, csv.Error) as exc:
         return Response(
             {"success": False, "error": f"CSV processing error: {exc}"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -189,7 +189,7 @@ def import_contexts(request):
             format_import_response(total_rows, created_count, skipped_count, errors)
         )
 
-    except Exception as exc:
+    except (UnicodeDecodeError, csv.Error) as exc:
         return Response(
             {"success": False, "error": f"CSV processing error: {exc}"},
             status=status.HTTP_400_BAD_REQUEST,
@@ -312,7 +312,7 @@ def import_word_forms(request):
             format_import_response(total_rows, created_count, skipped_count, errors)
         )
 
-    except Exception as exc:
+    except (UnicodeDecodeError, csv.Error) as exc:
         return Response(
             {"success": False, "error": f"CSV processing error: {exc}"},
             status=status.HTTP_400_BAD_REQUEST,

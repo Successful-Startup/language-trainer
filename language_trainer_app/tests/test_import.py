@@ -60,6 +60,16 @@ class TestImportWordsEndpoint:
         assert response.status_code == 400
         assert "Missing required headers" in response.data["error"]
 
+    def test_bad_encoding_returns_400(self, auth_client):
+        """A file with invalid UTF-8 bytes must return a 400, not a 500."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        bad_bytes = b"base_form,part_of_speech_name\n\xff\xfe invalid"
+        f = SimpleUploadedFile("data.csv", bad_bytes, content_type="text/csv")
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
+        assert response.status_code == 400
+        assert "CSV processing error" in response.data["error"]
+
     def test_partial_success_when_some_rows_fail(self, auth_client, reference_data):
         """Valid rows commit; invalid rows are skipped and reported as errors.
 
@@ -98,6 +108,16 @@ class TestImportContextsEndpoint:
         response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
+
+    def test_bad_encoding_returns_400(self, auth_client):
+        """A file with invalid UTF-8 bytes must return a 400, not a 500."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        bad_bytes = b"text\n\xff\xfe invalid"
+        f = SimpleUploadedFile("data.csv", bad_bytes, content_type="text/csv")
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
+        assert response.status_code == 400
+        assert "CSV processing error" in response.data["error"]
 
     def test_context_text_casing_is_preserved_on_import(self, auth_client, db):
         """Import must NOT lowercase the context text.
@@ -149,3 +169,17 @@ class TestImportWordFormsEndpoint:
         response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
+
+    def test_bad_encoding_returns_400(self, auth_client):
+        """A file with invalid UTF-8 bytes must return a 400, not a 500."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        bad_bytes = (
+            b"word_base_form,word_part_of_speech_name,word_gender_name,"
+            b"word_form,case_name,form_gender_name,number_name\n"
+            b"\xff\xfe invalid"
+        )
+        f = SimpleUploadedFile("data.csv", bad_bytes, content_type="text/csv")
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
+        assert response.status_code == 400
+        assert "CSV processing error" in response.data["error"]
