@@ -13,9 +13,20 @@ class WordForm(models.Model):
         verbose_name = "Форма слова"
         verbose_name_plural = "Формы слов"
         constraints = [
+            # Standard unique constraint for rows where gender IS NOT NULL.
             models.UniqueConstraint(
-                fields=["word", "case", "gender", "number"], name="unique_word_form"
-            )
+                fields=["word", "case", "gender", "number"],
+                condition=models.Q(gender__isnull=False),
+                name="unique_word_form_with_gender",
+            ),
+            # Separate constraint for rows without a form gender (gender IS NULL).
+            # PostgreSQL treats NULL != NULL in unique indexes, so without this the
+            # same genderless word form could be inserted multiple times.
+            models.UniqueConstraint(
+                fields=["word", "case", "number"],
+                condition=models.Q(gender__isnull=True),
+                name="unique_word_form_without_gender",
+            ),
         ]
 
     def __str__(self):
