@@ -22,11 +22,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# In production, set DJANGO_SECRET_KEY environment variable
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-+##v=cibakucxjm(me4r-zxgpq7b2-n0%^(t1je)q(m^s!!n+z",  # fallback for development
-)
+# In production, set DJANGO_SECRET_KEY environment variable.
+# The application will refuse to start without it when DEBUG=False.
+_secret_key = os.environ.get("DJANGO_SECRET_KEY")
+if not _secret_key:
+    if os.environ.get("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes"):
+        _secret_key = "django-insecure-+##v=cibakucxjm(me4r-zxgpq7b2-n0%^(t1je)q(m^s!!n+z"  # dev only
+    else:
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY environment variable is not set. "
+            "Set it to a long random string before running in production."
+        )
+SECRET_KEY = _secret_key
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
@@ -191,7 +198,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = os.environ.get("FRONTEND_URL", "http://localhost:3000").split(
     ","
 )
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = False
 
 # Static files root — required for `collectstatic` in production
 STATIC_ROOT = BASE_DIR / "staticfiles"

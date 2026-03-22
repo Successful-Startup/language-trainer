@@ -12,16 +12,19 @@ class TestParametersSerializer(serializers.Serializer):
     genders = serializers.ListField(
         child=serializers.IntegerField(),
         min_length=1,
+        max_length=100,
         help_text="List of gender IDs to include in test",
     )
     cases = serializers.ListField(
         child=serializers.IntegerField(),
         min_length=1,
+        max_length=100,
         help_text="List of case IDs to include in test",
     )
     numbers = serializers.ListField(
         child=serializers.IntegerField(),
         min_length=1,
+        max_length=100,
         help_text="List of number IDs to include in test",
     )
 

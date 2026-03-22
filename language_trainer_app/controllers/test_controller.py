@@ -11,12 +11,17 @@ from language_trainer_app.serializers.test_parameters_serializer import (
 )
 from language_trainer_app.services.test_generator_service import TestGeneratorService
 
+DEFAULT_TEST_COUNT = 10
+
 
 class TestViewSet(viewsets.ViewSet):
     """ViewSet for generating language learning tests."""
 
     permission_classes = [AllowAny]
-    test_service = TestGeneratorService()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.test_service = TestGeneratorService()
 
     @action(detail=False, methods=["post"])
     def generate(self, request):
@@ -33,6 +38,6 @@ class TestViewSet(viewsets.ViewSet):
             numbers=validated_data["numbers"],
         )
 
-        test_items = self.test_service.generate_tests(test_params, count=10)
+        test_items = self.test_service.generate_tests(test_params, count=DEFAULT_TEST_COUNT)
         test_item_serializer = TestItemSerializer(test_items, many=True)
         return Response(test_item_serializer.data)

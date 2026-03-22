@@ -1,5 +1,5 @@
 """
-URL language_trainer_projecturation for language_trainer_project project.
+URL configuration for language_trainer_project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
