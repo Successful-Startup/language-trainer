@@ -16,10 +16,7 @@ class TestViewSet(viewsets.ViewSet):
     """ViewSet for generating language learning tests."""
 
     permission_classes = [AllowAny]
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.test_service = TestGeneratorService()
+    test_service = TestGeneratorService()
 
     @action(detail=False, methods=["post"])
     def generate(self, request):
