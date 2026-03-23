@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from language_trainer_app.models import Word
@@ -11,3 +11,5 @@ class WordViewSet(viewsets.ModelViewSet):
     queryset = Word.objects.select_related("gender", "part_of_speech").all()
     serializer_class = WordSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["base_form"]
