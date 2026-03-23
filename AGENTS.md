@@ -96,16 +96,18 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 Each resource provides `GET /`, `POST /`, `GET /{id}/`, `PUT /{id}/`, `PATCH /{id}/`, `DELETE /{id}/`.
 
-| Resource | Path prefix | Permissions |
-|---|---|---|
-| Words | `/words/` | Read-only for all; write requires auth |
-| Genders | `/genders/` | Read-only for all; write requires auth |
-| Cases | `/cases/` | Read-only for all; write requires auth |
-| Parts of speech | `/parts-of-speech/` | Read-only for all; write requires auth |
-| Word numbers | `/word-numbers/` | Read-only for all; write requires auth |
-| Word forms | `/word-forms/` | `IsAuthenticatedOrReadOnly` |
-| Contexts | `/contexts/` | Read-only for all; write requires auth |
-| Context-word-form pairs | `/context-word-form-pairs/` | `IsAuthenticatedOrReadOnly` |
+| Resource | Path prefix | Permissions | Search support |
+|---|---|---|---|
+| Words | `/words/` | Read-only for all; write requires auth | `?search=` searches `base_form` |
+| Genders | `/genders/` | Read-only for all; write requires auth | — |
+| Cases | `/cases/` | Read-only for all; write requires auth | — |
+| Parts of speech | `/parts-of-speech/` | Read-only for all; write requires auth | — |
+| Word numbers | `/word-numbers/` | Read-only for all; write requires auth | — |
+| Word forms | `/word-forms/` | `IsAuthenticatedOrReadOnly` | `?search=` searches `word_form` and `word__base_form` |
+| Contexts | `/contexts/` | Read-only for all; write requires auth | — |
+| Context-word-form pairs | `/context-word-form-pairs/` | `IsAuthenticatedOrReadOnly` | — |
+
+`WordViewSet` and `WordFormViewSet` both use DRF's `SearchFilter` (`filter_backends = [filters.SearchFilter]`). Passing `?search=term` performs a case-insensitive `icontains` match across all listed search fields.
 
 ### Test generation
 
@@ -263,8 +265,63 @@ Import behavior: uses `get_or_create`; skips duplicates; reports up to 20 errors
 
 ---
 
+## Django Admin
+
+Django admin is available at `http://localhost:8000/admin/`. It is a **separate server-side rendered interface** built into Django — not React, not part of `language-trainer-web`.
+
+**Who uses it:** developers and superusers for database inspection, debugging, and operations not yet covered by TeacherPage.
+
+**Registered models and their admin configuration:**
+
+| Model | search_fields | list_filter | Notes |
+|---|---|---|---|
+| `Word` | `base_form` | `gender`, `part_of_speech` | `show_full_result_count = False`; live search JS |
+| `WordForm` | `word_form`, `word__base_form` | `case`, `gender`, `number` | `show_full_result_count = False`; `raw_id_fields = ["word"]`; live search JS |
+| `Context` | `text` | — | |
+| `ContextWordFormPair` | `context__text`, `noun_form__word_form` | `noun_form__case`, `noun_form__gender`, `noun_form__number` | `raw_id_fields` for all FKs |
+| `Phrase` | `phrase_start` | — | `filter_horizontal = ["valid_words"]` |
+| `Gender`, `Case`, `PartOfSpeech`, `WordNumber` | `name` | — | Lookup tables |
+
+**Live search:** `WordAdmin` and `WordFormAdmin` include a custom debounced JS (`language_trainer_app/static/language_trainer_app/admin/live_search.js`) that auto-submits the search form 450 ms after the user stops typing.
+
+**Coexistence with TeacherPage:** both interfaces manage the same data independently. See `language-trainer-web/AGENTS.md` → Known Issues for the current state of TeacherPage coverage.
+
+---
+
 ## Code Conventions
 
 - **Formatter:** [Black](https://black.readthedocs.io/) — enforced in CI via GitHub Actions
 - All new code must pass Black formatting before merging
 - Run locally: `black .`
+
+---
+
+## Testing Approach — TDD
+
+**Always follow Test-Driven Development (Red → Green → Refactor):**
+
+1. Write a failing test first
+2. Write the minimum code to make it pass
+3. Refactor while keeping tests green
+
+**Test runner:** Django's built-in `TestCase` + `pytest-django` (if available)
+
+```bash
+python manage.py test
+# or
+pytest
+```
+
+**What to test:**
+
+| Layer | What to test |
+|---|---|
+| Services | All business logic (e.g. `TestGeneratorService`) — unit tests with mocked DB or `TestCase` |
+| ViewSets | API endpoints — use `APIClient` to assert status codes, response shapes, and auth rules |
+| Models | Custom `save()`, `clean()`, constraints, and any model methods |
+| Utils | CSV import logic — use in-memory CSV files |
+
+**Rules:**
+- Every new service method must have a test written before implementation
+- Every new API endpoint must have at least one happy-path and one error-path test
+- Do not commit code that reduces test coverage
