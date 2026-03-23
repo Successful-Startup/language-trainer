@@ -98,16 +98,24 @@ Each resource provides `GET /`, `POST /`, `GET /{id}/`, `PUT /{id}/`, `PATCH /{i
 
 | Resource | Path prefix | Permissions | Search support |
 |---|---|---|---|
-| Words | `/words/` | Read-only for all; write requires auth | `?search=` searches `base_form` |
+| Words | `/words/` | Read-only for all; write requires auth | `?search=` partial search on `base_form`; `match=exact` switches to case-insensitive exact search; `part_of_speech=` narrows results |
 | Genders | `/genders/` | Read-only for all; write requires auth | — |
 | Cases | `/cases/` | Read-only for all; write requires auth | — |
 | Parts of speech | `/parts-of-speech/` | Read-only for all; write requires auth | — |
 | Word numbers | `/word-numbers/` | Read-only for all; write requires auth | — |
-| Word forms | `/word-forms/` | `IsAuthenticatedOrReadOnly` | `?search=` searches `word_form` and `word__base_form` |
+| Word forms | `/word-forms/` | `IsAuthenticatedOrReadOnly` | `?search=` partial search on `word_form` and `word__base_form`; `match=exact` switches to case-insensitive exact search on `word_form` (default) or `word__base_form` (with `search_field=base_form`); `word_part_of_speech=` narrows results |
 | Contexts | `/contexts/` | Read-only for all; write requires auth | — |
 | Context-word-form pairs | `/context-word-form-pairs/` | `IsAuthenticatedOrReadOnly` | — |
 
-`WordViewSet` and `WordFormViewSet` both use DRF's `SearchFilter` (`filter_backends = [filters.SearchFilter]`). Passing `?search=term` performs a case-insensitive `icontains` match across all listed search fields.
+`WordViewSet` and `WordFormViewSet` both use DRF's `SearchFilter` (`filter_backends = [filters.SearchFilter]`). Passing `?search=term` performs a case-insensitive `icontains` match across all listed search fields by default.
+
+For teacher-facing exact lookup flows, both endpoints also support an opt-in exact mode:
+- `/words/?search=<term>&match=exact` → case-insensitive exact match on `base_form`
+- `/word-forms/?search=<term>&match=exact` → case-insensitive exact match on `word_form`
+- `/word-forms/?search=<term>&match=exact&search_field=base_form` → case-insensitive exact match on `word__base_form` (returns all declined forms of a base word)
+- `/words/?part_of_speech=<id>` and `/word-forms/?word_part_of_speech=<id>` can be combined with either search mode to narrow results before serialization
+
+The exact mode exists to power frontend dropdowns that must avoid partial matches while keeping the older partial-search behavior available for broader list filtering.
 
 ### Test generation
 

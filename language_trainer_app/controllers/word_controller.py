@@ -16,8 +16,17 @@ class WordViewSet(viewsets.ModelViewSet):
     search_fields = ["base_form"]
 
     def filter_queryset(self, queryset):
-        queryset = super().filter_queryset(queryset)
         search_term = self.request.query_params.get("search", "").strip()
+        match_mode = self.request.query_params.get("match", "").strip().lower()
+        part_of_speech_id = self.request.query_params.get("part_of_speech", "").strip()
+
+        if part_of_speech_id:
+            queryset = queryset.filter(part_of_speech_id=part_of_speech_id)
+
+        if search_term and match_mode == "exact":
+            return queryset.filter(base_form__iexact=search_term)
+
+        queryset = super().filter_queryset(queryset)
         if search_term:
             queryset = queryset.annotate(
                 search_rank=Case(
