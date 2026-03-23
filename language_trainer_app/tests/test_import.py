@@ -28,7 +28,9 @@ class TestImportWordsEndpoint:
         assert response.status_code == 400
 
     def test_successful_import(self, auth_client, reference_data):
-        csv_content = "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
+        csv_content = (
+            "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
+        )
         f = make_csv_file(csv_content)
         response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.status_code == 200
@@ -37,8 +39,12 @@ class TestImportWordsEndpoint:
         assert Word.objects.filter(base_form="дом").exists()
 
     def test_skips_duplicate_on_reimport(self, auth_client, reference_data):
-        csv_content = "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
-        auth_client.post(self.url, {"file": make_csv_file(csv_content)}, format="multipart")
+        csv_content = (
+            "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
+        )
+        auth_client.post(
+            self.url, {"file": make_csv_file(csv_content)}, format="multipart"
+        )
 
         response = auth_client.post(
             self.url, {"file": make_csv_file(csv_content)}, format="multipart"
@@ -47,7 +53,9 @@ class TestImportWordsEndpoint:
         assert response.data["created"] == 0
 
     def test_reports_error_for_invalid_pos(self, auth_client, reference_data):
-        csv_content = "base_form,part_of_speech_name,gender_name\nдом,несуществующий,мужской\n"
+        csv_content = (
+            "base_form,part_of_speech_name,gender_name\nдом,несуществующий,мужской\n"
+        )
         f = make_csv_file(csv_content)
         response = auth_client.post(self.url, {"file": f}, format="multipart")
         assert response.data["errors"] == 1

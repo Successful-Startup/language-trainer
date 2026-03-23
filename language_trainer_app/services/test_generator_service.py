@@ -65,7 +65,9 @@ class TestGeneratorService:
             self._build_test_item(pair, test_params.use_adjective) for pair in pairs
         ]
 
-    def _build_test_item(self, pair: ContextWordFormPair, use_adjective: bool) -> TestItem:
+    def _build_test_item(
+        self, pair: ContextWordFormPair, use_adjective: bool
+    ) -> TestItem:
         """Build a TestItem DTO from a ContextWordFormPair instance."""
         context = pair.context.text
 

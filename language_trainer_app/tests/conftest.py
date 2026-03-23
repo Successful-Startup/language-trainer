@@ -16,7 +16,6 @@ from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.models.word_number import WordNumber
 
-
 # ---------------------------------------------------------------------------
 # Helpers (plain functions, not fixtures)
 # ---------------------------------------------------------------------------
@@ -24,7 +23,9 @@ from language_trainer_app.models.word_number import WordNumber
 
 def make_csv_file(content: str, filename: str = "test.csv") -> SimpleUploadedFile:
     """Wrap a CSV string as a SimpleUploadedFile (mimics a real upload)."""
-    return SimpleUploadedFile(filename, content.encode("utf-8"), content_type="text/csv")
+    return SimpleUploadedFile(
+        filename, content.encode("utf-8"), content_type="text/csv"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -89,4 +90,10 @@ def full_test_data(db, reference_data):
     pair = ContextWordFormPair.objects.create(
         context=context, noun_form=noun_form, adjective_form=None
     )
-    return {**rd, "word": word, "noun_form": noun_form, "context": context, "pair": pair}
+    return {
+        **rd,
+        "word": word,
+        "noun_form": noun_form,
+        "context": context,
+        "pair": pair,
+    }

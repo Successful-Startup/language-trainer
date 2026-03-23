@@ -37,7 +37,9 @@ class TestGenerateEndpoint:
         assert "correct_answer" in item
 
     def test_invalid_payload_returns_400(self, api_client, db):
-        response = api_client.post(self.url, {"use_adjective": "notabool"}, format="json")
+        response = api_client.post(
+            self.url, {"use_adjective": "notabool"}, format="json"
+        )
         assert response.status_code == 400
 
     def test_allows_anonymous_access(self, api_client, reference_data):
@@ -176,7 +178,9 @@ class TestWordExactSearch:
         assert len(results) == 2
         assert {word["base_form"] for word in results} == {"дом"}
 
-    def test_exact_search_supports_part_of_speech_filter(self, api_client, reference_data):
+    def test_exact_search_supports_part_of_speech_filter(
+        self, api_client, reference_data
+    ):
         response = api_client.get(
             self.url,
             {
@@ -520,9 +524,7 @@ class TestWordFormExactSearchByBaseForm:
 
     def test_default_exact_search_still_works_by_word_form(self, api_client):
         """Without search_field, exact search continues filtering by word_form."""
-        response = api_client.get(
-            self.url, {"search": "дом", "match": "exact"}
-        )
+        response = api_client.get(self.url, {"search": "дом", "match": "exact"})
         assert response.status_code == 200
         results = response.data["results"]
         # Only forms where word_form == 'дом' exactly
