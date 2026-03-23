@@ -3,6 +3,8 @@
 import pytest
 from django.contrib.auth.models import User
 
+from language_trainer_app.models.word import Word
+from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.tests.conftest import make_csv_file
 
 
@@ -106,3 +108,93 @@ class TestPermissions:
             "/api/import/words/", {"file": f}, format="multipart"
         )
         assert response.status_code == 401
+
+
+class TestWordSearch:
+    url = "/words/"
+
+    @pytest.fixture(autouse=True)
+    def setup_words(self, reference_data):
+        rd = reference_data
+        self.word_dom = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        self.word_dom2 = Word.objects.create(
+            base_form="домик", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        self.word_koshka = Word.objects.create(
+            base_form="кошка", part_of_speech=rd["pos_noun"], gender=rd["gender_f"]
+        )
+
+    def test_search_returns_matching_words(self, api_client):
+        response = api_client.get(self.url, {"search": "дом"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        base_forms = [w["base_form"] for w in results]
+        assert "дом" in base_forms
+        assert "домик" in base_forms
+        assert "кошка" not in base_forms
+
+    def test_search_empty_returns_all(self, api_client):
+        response = api_client.get(self.url, {"search": ""})
+        assert response.status_code == 200
+        assert response.data["count"] >= 3
+
+    def test_search_no_match_returns_empty(self, api_client):
+        response = api_client.get(self.url, {"search": "zzz_no_match_zzz"})
+        assert response.status_code == 200
+        assert response.data["results"] == []
+
+
+class TestWordFormSearch:
+    url = "/word-forms/"
+
+    @pytest.fixture(autouse=True)
+    def setup_word_forms(self, reference_data):
+        rd = reference_data
+        word = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        self.form_dom = WordForm.objects.create(
+            word=word,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="дому",
+        )
+        word2 = Word.objects.create(
+            base_form="кошка", part_of_speech=rd["pos_noun"], gender=rd["gender_f"]
+        )
+        self.form_koshka = WordForm.objects.create(
+            word=word2,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="кошке",
+        )
+
+    def test_search_by_word_form_returns_match(self, api_client):
+        response = api_client.get(self.url, {"search": "дому"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        word_forms = [wf["word_form"] for wf in results]
+        assert "дому" in word_forms
+        assert "кошке" not in word_forms
+
+    def test_search_by_base_form_returns_match(self, api_client):
+        response = api_client.get(self.url, {"search": "кошка"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        word_forms = [wf["word_form"] for wf in results]
+        assert "кошке" in word_forms
+        assert "дому" not in word_forms
+
+    def test_search_empty_returns_all(self, api_client):
+        response = api_client.get(self.url, {"search": ""})
+        assert response.status_code == 200
+        assert response.data["count"] >= 2
+
+    def test_search_no_match_returns_empty(self, api_client):
+        response = api_client.get(self.url, {"search": "zzz_no_match_zzz"})
+        assert response.status_code == 200
+        assert response.data["results"] == []
