@@ -38,6 +38,8 @@ class TestViewSet(viewsets.ViewSet):
             numbers=validated_data["numbers"],
         )
 
-        test_items = self.test_service.generate_tests(test_params, count=DEFAULT_TEST_COUNT)
+        test_items = self.test_service.generate_tests(
+            test_params, count=DEFAULT_TEST_COUNT
+        )
         test_item_serializer = TestItemSerializer(test_items, many=True)
         return Response(test_item_serializer.data)

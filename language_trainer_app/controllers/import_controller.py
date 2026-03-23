@@ -99,9 +99,7 @@ def import_words(request):
                     pos_name = safe_get_row_value(
                         row, "part_of_speech_name", required=True
                     )
-                    gender_name = safe_get_row_value(
-                        row, "gender_name", required=False
-                    )
+                    gender_name = safe_get_row_value(row, "gender_name", required=False)
 
                     part_of_speech = find_reference_or_error(
                         PartOfSpeech, "name", pos_name, "Invalid part_of_speech_name"
@@ -153,9 +151,7 @@ def import_contexts(request):
     try:
         csv_reader = _parse_csv(request.FILES["file"])
 
-        header_error = validate_csv_headers(
-            csv_reader, required_headers=["text"]
-        )
+        header_error = validate_csv_headers(csv_reader, required_headers=["text"])
         if header_error:
             return header_error
 
@@ -248,16 +244,12 @@ def import_word_forms(request):
                     word_gender_name = safe_get_row_value(
                         row, "word_gender_name", required=False
                     )
-                    word_form_str = safe_get_row_value(
-                        row, "word_form", required=True
-                    )
+                    word_form_str = safe_get_row_value(row, "word_form", required=True)
                     case_name = safe_get_row_value(row, "case_name", required=True)
                     form_gender_name = safe_get_row_value(
                         row, "form_gender_name", required=False
                     )
-                    number_name = safe_get_row_value(
-                        row, "number_name", required=True
-                    )
+                    number_name = safe_get_row_value(row, "number_name", required=True)
 
                     part_of_speech = find_reference_or_error(
                         PartOfSpeech,

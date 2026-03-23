@@ -47,7 +47,9 @@ class TestTestGeneratorService:
         # the (word, case, NULL, number) unique constraint is not violated.
         for i in range(5):
             word = Word.objects.create(
-                base_form=f"слово{i}", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+                base_form=f"слово{i}",
+                part_of_speech=rd["pos_noun"],
+                gender=rd["gender_m"],
             )
             form = WordForm.objects.create(
                 word=word,
