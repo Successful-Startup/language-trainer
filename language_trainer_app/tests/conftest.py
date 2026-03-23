@@ -56,6 +56,8 @@ def reference_data(db):
     pos_noun = PartOfSpeech.objects.create(name="существительное")
     pos_adj = PartOfSpeech.objects.create(name="прилагательное")
     case_nom = Case.objects.create(name="именительный")
+    case_gen = Case.objects.create(name="родительный")
+    case_dat = Case.objects.create(name="дательный")
     number_sg = WordNumber.objects.create(name="единственное")
     return {
         "gender_m": gender_m,
@@ -63,6 +65,8 @@ def reference_data(db):
         "pos_noun": pos_noun,
         "pos_adj": pos_adj,
         "case_nom": case_nom,
+        "case_gen": case_gen,
+        "case_dat": case_dat,
         "number_sg": number_sg,
     }
 

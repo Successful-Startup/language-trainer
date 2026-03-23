@@ -45,6 +45,10 @@ class WordAdmin(admin.ModelAdmin):
     list_filter = ["gender", "part_of_speech"]
     search_fields = ["base_form"]
     ordering = ["base_form"]
+    show_full_result_count = False
+
+    class Media:
+        js = ("language_trainer_app/admin/live_search.js",)
 
 
 @admin.register(WordForm)
@@ -54,6 +58,10 @@ class WordFormAdmin(admin.ModelAdmin):
     search_fields = ["word_form", "word__base_form"]
     ordering = ["word", "case"]
     raw_id_fields = ["word"]
+    show_full_result_count = False
+
+    class Media:
+        js = ("language_trainer_app/admin/live_search.js",)
 
 
 @admin.register(Context)

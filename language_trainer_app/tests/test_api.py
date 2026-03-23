@@ -146,6 +146,52 @@ class TestWordSearch:
         assert response.data["results"] == []
 
 
+class TestWordExactSearch:
+    url = "/words/"
+
+    @pytest.fixture(autouse=True)
+    def setup_words(self, reference_data):
+        rd = reference_data
+        self.word_dom_noun = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        self.word_dom_adjective = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_adj"], gender=rd["gender_m"]
+        )
+        Word.objects.create(
+            base_form="домик", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+
+    def test_exact_search_returns_only_full_matches(self, api_client):
+        response = api_client.get(self.url, {"search": "дом", "match": "exact"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 2
+        assert {word["base_form"] for word in results} == {"дом"}
+
+    def test_exact_search_is_case_insensitive(self, api_client):
+        response = api_client.get(self.url, {"search": "ДОМ", "match": "exact"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 2
+        assert {word["base_form"] for word in results} == {"дом"}
+
+    def test_exact_search_supports_part_of_speech_filter(self, api_client, reference_data):
+        response = api_client.get(
+            self.url,
+            {
+                "search": "дом",
+                "match": "exact",
+                "part_of_speech": reference_data["pos_noun"].id,
+            },
+        )
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 1
+        assert results[0]["base_form"] == "дом"
+        assert results[0]["part_of_speech"] == reference_data["pos_noun"].id
+
+
 class TestWordFormSearch:
     url = "/word-forms/"
 
@@ -198,6 +244,76 @@ class TestWordFormSearch:
         response = api_client.get(self.url, {"search": "zzz_no_match_zzz"})
         assert response.status_code == 200
         assert response.data["results"] == []
+
+
+class TestWordFormExactSearch:
+    url = "/word-forms/"
+
+    @pytest.fixture(autouse=True)
+    def setup_word_forms(self, reference_data):
+        rd = reference_data
+        noun_word = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        adjective_word = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_adj"], gender=rd["gender_m"]
+        )
+        other_word = Word.objects.create(
+            base_form="домик", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+
+        self.noun_form = WordForm.objects.create(
+            word=noun_word,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="дом",
+        )
+        self.adjective_form = WordForm.objects.create(
+            word=adjective_word,
+            case=rd["case_nom"],
+            gender=rd["gender_m"],
+            number=rd["number_sg"],
+            word_form="дом",
+        )
+        WordForm.objects.create(
+            word=other_word,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="домик",
+        )
+
+    def test_exact_search_returns_only_full_word_form_matches(self, api_client):
+        response = api_client.get(self.url, {"search": "дом", "match": "exact"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 2
+        assert {word_form["word_form"] for word_form in results} == {"дом"}
+
+    def test_exact_search_is_case_insensitive(self, api_client):
+        response = api_client.get(self.url, {"search": "ДОМ", "match": "exact"})
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 2
+        assert {word_form["word_form"] for word_form in results} == {"дом"}
+
+    def test_exact_search_supports_word_part_of_speech_filter(
+        self, api_client, reference_data
+    ):
+        response = api_client.get(
+            self.url,
+            {
+                "search": "дом",
+                "match": "exact",
+                "word_part_of_speech": reference_data["pos_adj"].id,
+            },
+        )
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 1
+        assert results[0]["word_form"] == "дом"
+        assert results[0]["word"]["part_of_speech"] == reference_data["pos_adj"].id
 
 
 class TestWordSearchRanking:
@@ -291,3 +407,124 @@ class TestWordFormSearchRanking:
         assert response.status_code == 200
         forms = [wf["word_form"] for wf in response.data["results"]]
         assert forms.index("домой") < forms.index("бездомнику")
+
+
+class TestWordFormExactSearchByBaseForm:
+    """Exact search with search_field=base_form returns all forms of the base word."""
+
+    url = "/word-forms/"
+
+    @pytest.fixture(autouse=True)
+    def setup_word_forms(self, reference_data):
+        rd = reference_data
+        self.word_dom = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        self.word_domik = Word.objects.create(
+            base_form="домик", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        self.word_dom_adj = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_adj"], gender=rd["gender_m"]
+        )
+
+        # Multiple forms of "дом" noun
+        self.form_dom_nom = WordForm.objects.create(
+            word=self.word_dom,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="дом",
+        )
+        self.form_dom_gen = WordForm.objects.create(
+            word=self.word_dom,
+            case=rd["case_gen"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="дома",
+        )
+        self.form_dom_dat = WordForm.objects.create(
+            word=self.word_dom,
+            case=rd["case_dat"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="дому",
+        )
+        # Form of "домик" — should NOT appear in exact base_form search for "дом"
+        self.form_domik = WordForm.objects.create(
+            word=self.word_domik,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="домик",
+        )
+        # Form of "дом" adjective
+        self.form_dom_adj = WordForm.objects.create(
+            word=self.word_dom_adj,
+            case=rd["case_nom"],
+            gender=rd["gender_m"],
+            number=rd["number_sg"],
+            word_form="домовый",
+        )
+
+    def test_base_form_search_returns_all_forms_of_exact_word(self, api_client):
+        """search_field=base_form + match=exact returns ALL forms of word 'дом'."""
+        response = api_client.get(
+            self.url,
+            {"search": "дом", "match": "exact", "search_field": "base_form"},
+        )
+        assert response.status_code == 200
+        results = response.data["results"]
+        word_forms = {wf["word_form"] for wf in results}
+        # All forms of base_form=дом must be present
+        assert "дом" in word_forms
+        assert "дома" in word_forms
+        assert "дому" in word_forms
+        assert "домовый" in word_forms
+        # Forms of base_form=домик must NOT be present
+        assert "домик" not in word_forms
+
+    def test_base_form_search_is_case_insensitive(self, api_client):
+        response = api_client.get(
+            self.url,
+            {"search": "ДОМ", "match": "exact", "search_field": "base_form"},
+        )
+        assert response.status_code == 200
+        results = response.data["results"]
+        assert len(results) == 4  # дом, дома, дому, домовый
+
+    def test_base_form_search_with_pos_filter(self, api_client, reference_data):
+        """Combining search_field=base_form with word_part_of_speech narrows results."""
+        response = api_client.get(
+            self.url,
+            {
+                "search": "дом",
+                "match": "exact",
+                "search_field": "base_form",
+                "word_part_of_speech": reference_data["pos_noun"].id,
+            },
+        )
+        assert response.status_code == 200
+        results = response.data["results"]
+        # Only noun forms: дом, дома, дому (not домовый which is adjective)
+        assert len(results) == 3
+        word_forms = {wf["word_form"] for wf in results}
+        assert word_forms == {"дом", "дома", "дому"}
+
+    def test_base_form_search_no_match_returns_empty(self, api_client):
+        response = api_client.get(
+            self.url,
+            {"search": "zzz", "match": "exact", "search_field": "base_form"},
+        )
+        assert response.status_code == 200
+        assert response.data["results"] == []
+
+    def test_default_exact_search_still_works_by_word_form(self, api_client):
+        """Without search_field, exact search continues filtering by word_form."""
+        response = api_client.get(
+            self.url, {"search": "дом", "match": "exact"}
+        )
+        assert response.status_code == 200
+        results = response.data["results"]
+        # Only forms where word_form == 'дом' exactly
+        assert len(results) == 1
+        assert results[0]["word_form"] == "дом"

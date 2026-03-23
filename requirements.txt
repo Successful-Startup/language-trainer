@@ -6,3 +6,5 @@ psycopg2-binary==2.9.9
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.3.1
+pymorphy3==2.0.2
+pymorphy3-dicts-ru==2.4.417150.4580142
