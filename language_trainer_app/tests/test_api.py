@@ -198,3 +198,96 @@ class TestWordFormSearch:
         response = api_client.get(self.url, {"search": "zzz_no_match_zzz"})
         assert response.status_code == 200
         assert response.data["results"] == []
+
+
+class TestWordSearchRanking:
+    """Exact match must come first, then startswith, then contains."""
+
+    url = "/words/"
+
+    @pytest.fixture(autouse=True)
+    def setup_words(self, reference_data):
+        rd = reference_data
+        Word.objects.create(
+            base_form="бездомник", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        Word.objects.create(
+            base_form="домик", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+
+    def test_exact_match_comes_first(self, api_client):
+        response = api_client.get(self.url, {"search": "дом"})
+        assert response.status_code == 200
+        base_forms = [w["base_form"] for w in response.data["results"]]
+        assert base_forms[0] == "дом"
+
+    def test_startswith_before_contains(self, api_client):
+        response = api_client.get(self.url, {"search": "дом"})
+        assert response.status_code == 200
+        base_forms = [w["base_form"] for w in response.data["results"]]
+        assert base_forms.index("домик") < base_forms.index("бездомник")
+
+    def test_ranking_without_exact_match(self, api_client):
+        """When no exact match exists, startswith still comes before contains."""
+        response = api_client.get(self.url, {"search": "доми"})
+        assert response.status_code == 200
+        base_forms = [w["base_form"] for w in response.data["results"]]
+        assert base_forms == ["домик"]
+
+
+class TestWordFormSearchRanking:
+    """word_form exact/startswith ranks above word__base_form matches."""
+
+    url = "/word-forms/"
+
+    @pytest.fixture(autouse=True)
+    def setup_forms(self, reference_data):
+        rd = reference_data
+        word_dom = Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        word_domik = Word.objects.create(
+            base_form="домик", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        word_bezdom = Word.objects.create(
+            base_form="бездомник", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        # word_form exact match: "дом"
+        WordForm.objects.create(
+            word=word_dom,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="дом",
+        )
+        # word_form startswith "дом": "домой"
+        WordForm.objects.create(
+            word=word_domik,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="домой",
+        )
+        # word_form matched via base_form only (contains "дом" in base_form)
+        WordForm.objects.create(
+            word=word_bezdom,
+            case=rd["case_nom"],
+            gender=None,
+            number=rd["number_sg"],
+            word_form="бездомнику",
+        )
+
+    def test_exact_word_form_match_comes_first(self, api_client):
+        response = api_client.get(self.url, {"search": "дом"})
+        assert response.status_code == 200
+        forms = [wf["word_form"] for wf in response.data["results"]]
+        assert forms[0] == "дом"
+
+    def test_startswith_word_form_before_base_form_match(self, api_client):
+        response = api_client.get(self.url, {"search": "дом"})
+        assert response.status_code == 200
+        forms = [wf["word_form"] for wf in response.data["results"]]
+        assert forms.index("домой") < forms.index("бездомнику")
