@@ -25,6 +25,7 @@ class TestGeneratorService:
             "noun_form",
             "noun_form__word",
             "noun_form__word__gender",
+            "noun_form__number",
             "adjective_form",
             "adjective_form__word",
         )
@@ -72,11 +73,11 @@ class TestGeneratorService:
         context = pair.context.text
 
         if use_adjective:
-            # Find the nominative form of the adjective in the same gender/number
+            # Find the nominative form of the adjective matching the noun's gender/number
             nom_adj = WordForm.objects.filter(
                 word=pair.adjective_form.word,
-                number=pair.adjective_form.number,
-                gender=pair.adjective_form.gender,
+                number=pair.noun_form.number,
+                gender=pair.noun_form.word.gender,
                 case__name__iexact="именительный",
             ).first()
             adj_hint = nom_adj.word_form if nom_adj else pair.adjective_form.word.base_form
