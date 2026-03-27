@@ -2,6 +2,7 @@ from typing import List
 
 from language_trainer_app.dtos import TestItem, TestParameters
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
+from language_trainer_app.models.word_form import WordForm
 
 
 class TestGeneratorService:
@@ -35,8 +36,7 @@ class TestGeneratorService:
                 adjective_form__case__in=cases,
                 adjective_form__number__in=numbers,
             )
-        else:
-            queryset = queryset.filter(adjective_form__isnull=True)
+        # when use_adjective=False: include all pairs regardless of adjective_form
 
         return queryset
 
@@ -72,8 +72,17 @@ class TestGeneratorService:
         context = pair.context.text
 
         if use_adjective:
+            # Find the nominative form of the adjective in the same gender/number
+            nom_adj = WordForm.objects.filter(
+                word=pair.adjective_form.word,
+                number=pair.adjective_form.number,
+                gender=pair.adjective_form.gender,
+                case__name__iexact="именительный",
+            ).first()
+            adj_hint = nom_adj.word_form if nom_adj else pair.adjective_form.word.base_form
+
             noun_with_adjective = (
-                f"{pair.adjective_form.word.base_form} {pair.noun_form.word.base_form}"
+                f"{adj_hint} {pair.noun_form.word.base_form}"
             )
             correct_answer = (
                 f"{pair.adjective_form.word_form} {pair.noun_form.word_form}"
