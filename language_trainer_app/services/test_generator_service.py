@@ -33,7 +33,6 @@ class TestGeneratorService:
         if use_adjective:
             queryset = queryset.filter(
                 adjective_form__isnull=False,
-                adjective_form__word__gender__in=genders,
                 adjective_form__case__in=cases,
                 adjective_form__number__in=numbers,
             )
