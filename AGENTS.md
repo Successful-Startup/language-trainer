@@ -225,7 +225,7 @@ Phrase ──▶ Word (M2M: valid_words)
 
 | Service | Responsibility |
 |---|---|
-| `TestGeneratorService` | Generates `TestItem` instances from `TestParameters` using random sampling via `ORDER BY RANDOM()`. When `use_adjective=False`, all pairs are included regardless of whether they have an adjective form (the adjective is simply ignored in the hint/answer). When `use_adjective=True`, the hint shows the adjective in nominative case matching the noun's word-level gender and number (uses `pair.noun_form.word.gender` as source of truth, not the nullable `adjective_form.gender`). |
+| `TestGeneratorService` | Generates `TestItem` instances from `TestParameters` using random sampling via `ORDER BY RANDOM()`. When `use_adjective=False`, all pairs are included regardless of whether they have an adjective form (the adjective is simply ignored in the hint/answer). When `use_adjective=True`, filters for pairs with adjective forms matching the selected cases and numbers (gender is filtered only on the noun — adjective Words don't have inherent word-level gender). The hint shows the adjective in nominative case matching the noun's word-level gender and number (uses `pair.noun_form.word.gender` as source of truth). |
 
 ---
 
