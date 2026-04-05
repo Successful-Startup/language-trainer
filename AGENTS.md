@@ -12,7 +12,7 @@ Django REST API for the Language Trainer application.
 | Auth | JWT via `djangorestframework-simplejwt` |
 | CORS | `django-cors-headers` |
 | Containerization | Docker + docker-compose |
-| CI | GitHub Actions (Black code formatter check) |
+| CI | GitHub Actions (Black formatter check + security workflow with pip-audit, pip check, deploy checks, pytest) |
 
 ---
 
@@ -124,6 +124,8 @@ For teacher-facing exact lookup flows, both endpoints also support an opt-in exa
 - `/words/?part_of_speech=<id>` and `/word-forms/?word_part_of_speech=<id>` can be combined with either search mode to narrow results before serialization
 
 The exact mode exists to power frontend dropdowns that must avoid partial matches while keeping the older partial-search behavior available for broader list filtering.
+
+Exact-match lookups for `/words/`, `/word-forms/`, and CSV reference/import helpers are implemented with a shared Unicode-aware Python `casefold()` helper instead of relying only on DB-level `__iexact`. This avoids SQLite-specific failures for Cyrillic case-insensitive matching during local validation and CI while preserving the same behavior in PostgreSQL.
 
 ### Test generation
 
@@ -238,6 +240,13 @@ Phrase ──▶ Word (M2M: valid_words)
 ---
 
 ## JWT Configuration
+
+## Dependency And Security Workflow
+
+- Runtime dependency pins live in `requirements.txt`; development tools live in `requirements-dev.txt`.
+- The application Docker image now installs only `requirements.txt`, so dev-only packages like `black` are not shipped in the runtime container.
+- The backend repo now has a dedicated `.github/workflows/security.yml` workflow that runs `pip-audit`, `pip check`, `python manage.py check --deploy`, and `pytest` on every push and pull request.
+- Local validation after dependency changes should cover both dependency health and behavior: `pip check`, `pytest`, and at least one `manage.py check --deploy` run.
 
 | Setting | Value |
 |---|---|
