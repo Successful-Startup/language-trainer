@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.serializers.word_form_serializer import WordFormSerializer
+from language_trainer_app.utils import filter_queryset_casefold_exact
 
 
 class WordFormViewSet(viewsets.ModelViewSet):
@@ -28,8 +29,10 @@ class WordFormViewSet(viewsets.ModelViewSet):
 
         if search_term and match_mode == "exact":
             if search_field == "base_form":
-                return queryset.filter(word__base_form__iexact=search_term)
-            return queryset.filter(word_form__iexact=search_term)
+                return filter_queryset_casefold_exact(
+                    queryset, "word__base_form", search_term
+                )
+            return filter_queryset_casefold_exact(queryset, "word_form", search_term)
 
         queryset = super().filter_queryset(queryset)
         if search_term:

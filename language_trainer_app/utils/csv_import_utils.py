@@ -6,6 +6,8 @@ Includes file validation, reference-object lookup, and response formatting.
 from rest_framework.response import Response
 from rest_framework import status
 
+from language_trainer_app.utils.unicode_matching import filter_queryset_casefold_exact
+
 MAX_ERRORS = 20
 
 
@@ -58,7 +60,7 @@ def find_reference_or_error(model, name_field, value, error_prefix):
     if not value:
         return None
 
-    obj = model.objects.filter(**{f"{name_field}__iexact": value}).first()
+    obj = filter_queryset_casefold_exact(model.objects.all(), name_field, value).first()
     if obj is None:
         raise ValueError(f"{error_prefix} '{value}'")
     return obj

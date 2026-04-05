@@ -9,6 +9,7 @@ from .csv_import_utils import (
     validate_csv_headers,
     safe_get_row_value,
 )
+from .unicode_matching import filter_queryset_casefold_exact
 
 __all__ = [
     "validate_uploaded_file",
@@ -16,4 +17,5 @@ __all__ = [
     "format_import_response",
     "validate_csv_headers",
     "safe_get_row_value",
+    "filter_queryset_casefold_exact",
 ]

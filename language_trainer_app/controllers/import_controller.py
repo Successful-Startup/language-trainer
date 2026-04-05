@@ -22,6 +22,7 @@ from language_trainer_app.utils.csv_import_utils import (
     validate_csv_headers,
     validate_uploaded_file,
 )
+from language_trainer_app.utils.unicode_matching import filter_queryset_casefold_exact
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -267,13 +268,15 @@ def import_word_forms(request):
                         Gender, "name", word_gender_name, "Invalid word gender_name"
                     )
 
-                    try:
-                        word = Word.objects.get(
-                            base_form__iexact=word_base_form,
+                    word = filter_queryset_casefold_exact(
+                        Word.objects.filter(
                             part_of_speech=part_of_speech,
                             gender=word_gender,
-                        )
-                    except Word.DoesNotExist:
+                        ),
+                        "base_form",
+                        word_base_form,
+                    ).first()
+                    if word is None:
                         raise ValueError(
                             f"Word not found: base_form='{word_base_form}', "
                             f"part_of_speech='{word_pos_name}', "
