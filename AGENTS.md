@@ -8,7 +8,7 @@ Django REST API for the Language Trainer application.
 |---|---|
 | Language | Python 3.12 |
 | Framework | Django 5.0 + Django REST Framework 3.15 |
-| Database | PostgreSQL 12 |
+| Database | PostgreSQL 16 |
 | Auth | JWT via `djangorestframework-simplejwt` |
 | CORS | `django-cors-headers` |
 | Containerization | Docker + docker-compose |
@@ -50,6 +50,14 @@ docker-compose up
 ```
 
 This starts two containers: the Django app on port `8000` and PostgreSQL on port `5432`.
+
+When bumping PostgreSQL to a new major version for local development, do not try to reuse the existing Docker data directory. The supported workflow in this repo is:
+1. Stop the stack and remove the `pgdata` Docker volume.
+2. Start the new PostgreSQL container so it creates a fresh empty cluster.
+3. Run `python manage.py migrate`.
+4. Run `python manage.py seed_vocabulary` to repopulate reproducible vocabulary data.
+
+This project can rebuild its baseline local data from migrations plus `seed_vocabulary`, but any hand-entered local records that are not reproducible from those sources must be exported separately before deleting the volume.
 
 ### Option 2: Manual (venv)
 
