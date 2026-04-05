@@ -58,6 +58,50 @@ class TestGenerateEndpoint:
         assert response.status_code == 200
 
 
+class TestContextEndpoint:
+    url = "/contexts/"
+
+    def test_create_with_exactly_one_placeholder_succeeds(self, auth_client, db):
+        response = auth_client.post(
+            self.url, {"text": "В ____ живёт семья"}, format="json"
+        )
+        assert response.status_code == 201
+
+    def test_create_without_placeholder_returns_400(self, auth_client, db):
+        response = auth_client.post(
+            self.url, {"text": "Без пропуска"}, format="json"
+        )
+        assert response.status_code == 400
+        assert "text" in response.data
+
+    def test_create_with_two_placeholders_returns_400(self, auth_client, db):
+        response = auth_client.post(
+            self.url, {"text": "Этот ____ очень ____"}, format="json"
+        )
+        assert response.status_code == 400
+        assert "text" in response.data
+
+    def test_update_with_two_placeholders_returns_400(self, auth_client, db):
+        create_resp = auth_client.post(
+            self.url, {"text": "В ____ живёт семья"}, format="json"
+        )
+        assert create_resp.status_code == 201
+        context_id = create_resp.data["id"]
+        response = auth_client.put(
+            f"{self.url}{context_id}/",
+            {"text": "____ и ещё ____"},
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "text" in response.data
+
+    def test_requires_authentication_for_create(self, api_client, db):
+        response = api_client.post(
+            self.url, {"text": "В ____ живёт семья"}, format="json"
+        )
+        assert response.status_code == 401
+
+
 class TestAuthEndpoints:
     login_url = "/auth/login/"
     refresh_url = "/auth/refresh/"

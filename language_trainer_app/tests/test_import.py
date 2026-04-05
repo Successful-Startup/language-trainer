@@ -117,6 +117,13 @@ class TestImportContextsEndpoint:
         assert response.data["errors"] == 1
         assert response.data["created"] == 0
 
+    def test_rejects_context_with_two_placeholders(self, auth_client, db):
+        csv_content = "text\nЭтот ____ очень ____\n"
+        f = make_csv_file(csv_content)
+        response = auth_client.post(self.url, {"file": f}, format="multipart")
+        assert response.data["errors"] == 1
+        assert response.data["created"] == 0
+
     def test_bad_encoding_returns_400(self, auth_client):
         """A file with invalid UTF-8 bytes must return a 400, not a 500."""
         from django.core.files.uploadedfile import SimpleUploadedFile
