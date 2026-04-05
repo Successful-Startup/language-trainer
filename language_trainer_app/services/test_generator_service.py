@@ -79,11 +79,11 @@ class TestGeneratorService:
                 gender=pair.noun_form.word.gender,
                 case__name__iexact="именительный",
             ).first()
-            adj_hint = nom_adj.word_form if nom_adj else pair.adjective_form.word.base_form
-
-            noun_with_adjective = (
-                f"{adj_hint} {pair.noun_form.word.base_form}"
+            adj_hint = (
+                nom_adj.word_form if nom_adj else pair.adjective_form.word.base_form
             )
+
+            noun_with_adjective = f"{adj_hint} {pair.noun_form.word.base_form}"
             correct_answer = (
                 f"{pair.adjective_form.word_form} {pair.noun_form.word_form}"
             )
