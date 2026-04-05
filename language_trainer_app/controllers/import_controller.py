@@ -169,7 +169,13 @@ def import_contexts(request):
                     text = safe_get_row_value(row, "text", required=True)
 
                     if "____" not in text:
-                        raise ValueError("Context must contain '____' placeholder")
+                        raise ValueError(
+                            "Context must contain '____' as the blank placeholder."
+                        )
+                    if text.count("____") > 1:
+                        raise ValueError(
+                            "Context must contain exactly one '____' placeholder, found more than one."
+                        )
 
                     _, created = Context.objects.get_or_create(text=text)
                     if created:

@@ -12,9 +12,14 @@ class ContextSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     def validate_text(self, value):
-        """Validate that context contains placeholder."""
-        if "____" not in value:
+        """Validate that context contains exactly one '____' placeholder."""
+        count = value.count("____")
+        if count == 0:
             raise serializers.ValidationError(
-                "Context must contain '____' placeholder for the word form."
+                "Context must contain '____' as the blank placeholder."
+            )
+        if count > 1:
+            raise serializers.ValidationError(
+                "Context must contain exactly one '____' placeholder, found more than one."
             )
         return value
