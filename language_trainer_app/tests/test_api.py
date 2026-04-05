@@ -68,9 +68,7 @@ class TestContextEndpoint:
         assert response.status_code == 201
 
     def test_create_without_placeholder_returns_400(self, auth_client, db):
-        response = auth_client.post(
-            self.url, {"text": "Без пропуска"}, format="json"
-        )
+        response = auth_client.post(self.url, {"text": "Без пропуска"}, format="json")
         assert response.status_code == 400
         assert "text" in response.data
 
