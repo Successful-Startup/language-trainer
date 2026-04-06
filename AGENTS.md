@@ -132,7 +132,11 @@ For teacher-facing exact lookup flows, both endpoints also support an opt-in exa
 
 The exact mode exists to power frontend dropdowns that must avoid partial matches while keeping the older partial-search behavior available for broader list filtering.
 
-Exact-match lookups for `/words/`, `/word-forms/`, and CSV reference/import helpers are implemented with a shared Unicode-aware Python `casefold()` helper instead of relying only on DB-level `__iexact`. This avoids SQLite-specific failures for Cyrillic case-insensitive matching during local validation and CI while preserving the same behavior in PostgreSQL.
+Exact-match lookups for `/words/`, `/word-forms/`, and CSV reference/import helpers now take a hybrid approach:
+- PostgreSQL uses DB-level `Lower(...)` filtering plus ranking that keeps exact-case matches first, avoiding the previous Python-side full-queryset scan on production.
+- Non-PostgreSQL environments keep the Python `casefold()` fallback so local SQLite-style validation still handles Cyrillic case-insensitive matching correctly.
+
+Production substring search performance for `/words/?search=` and `/word-forms/?search=` is supported by PostgreSQL `pg_trgm` GIN indexes added in migration `0005_add_search_indexes.py` for `Word.base_form` and `WordForm.word_form`.
 
 ### Test generation
 
