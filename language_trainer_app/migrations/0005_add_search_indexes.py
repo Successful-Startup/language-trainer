@@ -22,9 +22,7 @@ def remove_postgres_search_indexes(apps, schema_editor):
     if schema_editor.connection.vendor != "postgresql":
         return
 
-    schema_editor.execute(
-        "DROP INDEX IF EXISTS language_trainer_word_form_trgm_idx;"
-    )
+    schema_editor.execute("DROP INDEX IF EXISTS language_trainer_word_form_trgm_idx;")
     schema_editor.execute(
         "DROP INDEX IF EXISTS language_trainer_word_base_form_trgm_idx;"
     )
