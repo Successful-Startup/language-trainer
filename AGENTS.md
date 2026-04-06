@@ -135,6 +135,7 @@ The exact mode exists to power frontend dropdowns that must avoid partial matche
 Exact-match lookups for `/words/`, `/word-forms/`, and CSV reference/import helpers now take a hybrid approach:
 - PostgreSQL uses DB-level `Lower(...)` filtering plus ranking that keeps exact-case matches first, avoiding the previous Python-side full-queryset scan on production.
 - Non-PostgreSQL environments keep the Python `casefold()` fallback so local SQLite-style validation still handles Cyrillic case-insensitive matching correctly.
+- PostgreSQL exact-match performance is backed by functional indexes on `LOWER(base_form)` and `LOWER(word_form)` added in migration `0006_add_lower_exact_search_indexes.py`, so the `Lower(...) = lower(search_term)` path stays indexable on larger production datasets.
 
 Production substring search performance for `/words/?search=` and `/word-forms/?search=` is supported by PostgreSQL `pg_trgm` GIN indexes added in migration `0005_add_search_indexes.py` for `Word.base_form` and `WordForm.word_form`.
 
