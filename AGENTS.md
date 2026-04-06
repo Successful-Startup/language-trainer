@@ -11,6 +11,7 @@ Django REST API for the Language Trainer application.
 | Database | PostgreSQL 16 |
 | Auth | JWT via `djangorestframework-simplejwt` |
 | CORS | `django-cors-headers` |
+| WSGI server | Gunicorn 23 |
 | Containerization | Docker + docker-compose |
 | CI | GitHub Actions (Black formatter check + security workflow with pip-audit, pip check, deploy checks, pytest) |
 
@@ -58,6 +59,12 @@ When bumping PostgreSQL to a new major version for local development, do not try
 4. Run `python manage.py seed_vocabulary` to repopulate reproducible vocabulary data.
 
 This project can rebuild its baseline local data from migrations plus `seed_vocabulary`, but any hand-entered local records that are not reproducible from those sources must be exported separately before deleting the volume.
+
+### Production container startup
+
+- `django.sh` remains the development entrypoint for local Docker/manual work.
+- `django.prod.sh` is the production startup script: `migrate` -> `collectstatic --noinput` -> `seed_vocabulary` -> Gunicorn on `0.0.0.0:8000`.
+- The committed `Dockerfile` marks both scripts executable, but production deployment config outside the repo must explicitly run `django.prod.sh`.
 
 ### Option 2: Manual (venv)
 
