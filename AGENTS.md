@@ -85,7 +85,7 @@ Copy `.env.example` to `.env` and adjust as needed.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DJANGO_SECRET_KEY` | insecure fallback | Django secret key — **must be set in production** |
+| `DJANGO_SECRET_KEY` | required when `DJANGO_DEBUG=False`; dev-only fallback when `DJANGO_DEBUG=True` | Django secret key — the app refuses to start without it outside debug mode |
 | `DJANGO_DEBUG` | `True` | Set to `False` in production |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated list of allowed hosts |
 | `FRONTEND_URL` | `http://localhost:3000` | Used for CORS allowed origins (not in `.env.example` — has a default) |
@@ -151,9 +151,12 @@ Request body:
   "use_adjective": true,
   "genders": [1, 2],
   "cases": [3, 4],
-  "numbers": [1]
+  "numbers": [1],
+  "animacy": "Anim"
 }
 ```
+
+`animacy` is optional. Allowed values: `"Anim"` (одушевлённые), `"Inan"` (неодушевлённые), or `null` / omitted (все слова). When set, only nouns with the matching `Word.animacy` value are eligible.
 
 ### CSV Import
 
@@ -205,6 +208,7 @@ Phrase ──▶ Word (M2M: valid_words)
 - `base_form` (CharField, indexed)
 - `gender` → FK to `Gender` (nullable)
 - `part_of_speech` → FK to `PartOfSpeech`
+- `animacy` (CharField, nullable) — `"Anim"` / `"Inan"` / `null`. Populated automatically from pymorphy3 `tag.animacy` for nouns; always `null` for adjectives. Used by the test generator to filter nouns when the student selects animate / inanimate.
 - Unique constraint: `(base_form, part_of_speech, gender)`
 
 **`WordForm`** — a specific declined/inflected form of a word

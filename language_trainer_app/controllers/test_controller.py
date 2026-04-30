@@ -36,6 +36,7 @@ class TestViewSet(viewsets.ViewSet):
             genders=validated_data["genders"],
             cases=validated_data["cases"],
             numbers=validated_data["numbers"],
+            animacy=validated_data.get("animacy"),
         )
 
         test_items = self.test_service.generate_tests(

@@ -53,6 +53,30 @@ def _collect_errors(errors, row_num, exc):
     return True
 
 
+# Mapping of human-readable animacy names (case-insensitive) to the values
+# stored in Word.animacy. Empty / missing values map to None.
+_ANIMACY_NAME_TO_VALUE = {
+    "одушевлённое": Word.Animacy.ANIMATE.value,
+    "одушевленное": Word.Animacy.ANIMATE.value,
+    "неодушевлённое": Word.Animacy.INANIMATE.value,
+    "неодушевленное": Word.Animacy.INANIMATE.value,
+}
+
+
+def _resolve_animacy(animacy_name):
+    """Map an animacy column value to a Word.animacy choice or None."""
+    if not animacy_name:
+        return None
+    key = animacy_name.strip().casefold()
+    if not key:
+        return None
+    if key not in _ANIMACY_NAME_TO_VALUE:
+        raise ValueError(
+            "Invalid animacy_name: expected 'Одушевлённое' or 'Неодушевлённое'."
+        )
+    return _ANIMACY_NAME_TO_VALUE[key]
+
+
 # ---------------------------------------------------------------------------
 # Views
 # ---------------------------------------------------------------------------
@@ -65,10 +89,11 @@ def import_words(request):
     Bulk-import base words from a CSV file.
 
     Expected CSV format:
-        base_form,part_of_speech_name,gender_name
-        дом,существительное,мужской
-        красивый,прилагательное,мужской
-        идти,глагол,
+        base_form,part_of_speech_name,gender_name,animacy_name
+        дом,существительное,мужской,Неодушевлённое
+        собака,существительное,женский,Одушевлённое
+        красивый,прилагательное,мужской,
+        идти,глагол,,
     """
     file_error = validate_uploaded_file(request)
     if file_error:
@@ -80,7 +105,7 @@ def import_words(request):
         header_error = validate_csv_headers(
             csv_reader,
             required_headers=["base_form", "part_of_speech_name"],
-            optional_headers=["gender_name"],
+            optional_headers=["gender_name", "animacy_name"],
         )
         if header_error:
             return header_error
@@ -101,6 +126,9 @@ def import_words(request):
                         row, "part_of_speech_name", required=True
                     )
                     gender_name = safe_get_row_value(row, "gender_name", required=False)
+                    animacy_name = safe_get_row_value(
+                        row, "animacy_name", required=False
+                    )
 
                     part_of_speech = find_reference_or_error(
                         PartOfSpeech, "name", pos_name, "Invalid part_of_speech_name"
@@ -108,11 +136,13 @@ def import_words(request):
                     gender = find_reference_or_error(
                         Gender, "name", gender_name, "Invalid gender_name"
                     )
+                    animacy = _resolve_animacy(animacy_name)
 
                     _, created = Word.objects.get_or_create(
                         base_form=base_form.lower(),
                         part_of_speech=part_of_speech,
                         gender=gender,
+                        defaults={"animacy": animacy},
                     )
                     if created:
                         created_count += 1

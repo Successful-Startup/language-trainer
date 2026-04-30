@@ -262,8 +262,15 @@ class Command(BaseCommand):
             if pos_tag == "ADJF":
                 gender_tag = "masc"
 
+            # Animacy is only meaningful for nouns; adjectives get None.
+            animacy_tag = None
+            if pos_tag == "NOUN":
+                raw_animacy = str(tag.animacy) if tag.animacy else None
+                if raw_animacy in ("anim", "inan"):
+                    animacy_tag = "Anim" if raw_animacy == "anim" else "Inan"
+
             seen.add(normal)
-            lemmas.append((normal, gender_tag))
+            lemmas.append((normal, gender_tag, animacy_tag))
 
         return lemmas
 
@@ -286,7 +293,7 @@ class Command(BaseCommand):
         batch = []
         count = 0
 
-        for normal_form, gender_tag in lemmas:
+        for normal_form, gender_tag, animacy_tag in lemmas:
             base_form = normal_form.lower()
             if base_form in existing:
                 continue
@@ -298,6 +305,7 @@ class Command(BaseCommand):
                 base_form=base_form,
                 part_of_speech=pos_obj,
                 gender=gender_obj,
+                animacy=animacy_tag,
             )
             batch.append(word)
             count += 1
@@ -329,7 +337,7 @@ class Command(BaseCommand):
         batch = []
         total_created = 0
 
-        for idx, (normal_form, gender_tag) in enumerate(lemmas):
+        for idx, (normal_form, gender_tag, _animacy_tag) in enumerate(lemmas):
             base_form = normal_form.lower()
             gender_name = GENDER_MAP.get(gender_tag)
             word_obj = word_map.get((base_form, gender_name))

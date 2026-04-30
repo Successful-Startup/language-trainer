@@ -2,9 +2,19 @@ from django.db import models
 
 
 class Word(models.Model):
+    class Animacy(models.TextChoices):
+        ANIMATE = "Anim", "Одушевлённое"
+        INANIMATE = "Inan", "Неодушевлённое"
+
     base_form = models.CharField(max_length=100, db_index=True)
     gender = models.ForeignKey("Gender", on_delete=models.SET_NULL, null=True)
     part_of_speech = models.ForeignKey("PartOfSpeech", on_delete=models.CASCADE)
+    animacy = models.CharField(
+        max_length=4,
+        choices=Animacy.choices,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ["base_form"]

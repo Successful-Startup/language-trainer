@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from language_trainer_app.models.case import Case
 from language_trainer_app.models.gender import Gender
+from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_number import WordNumber
 
 
@@ -26,6 +27,13 @@ class TestParametersSerializer(serializers.Serializer):
         min_length=1,
         max_length=100,
         help_text="List of number IDs to include in test",
+    )
+    animacy = serializers.ChoiceField(
+        choices=Word.Animacy.choices,
+        required=False,
+        allow_null=True,
+        default=None,
+        help_text="Filter nouns by animacy: 'Anim', 'Inan', or null for all words",
     )
 
     def validate_genders(self, value):

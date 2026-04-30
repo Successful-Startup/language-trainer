@@ -14,6 +14,7 @@ class TestGeneratorService:
         genders: List[int],
         cases: List[int],
         numbers: List[int],
+        animacy: str = None,
     ):
         """Return a ContextWordFormPair queryset filtered by test parameters."""
         queryset = ContextWordFormPair.objects.filter(
@@ -29,6 +30,9 @@ class TestGeneratorService:
             "adjective_form",
             "adjective_form__word",
         )
+
+        if animacy is not None:
+            queryset = queryset.filter(noun_form__word__animacy=animacy)
 
         if use_adjective:
             queryset = queryset.filter(
@@ -59,6 +63,7 @@ class TestGeneratorService:
             genders=test_params.genders,
             cases=test_params.cases,
             numbers=test_params.numbers,
+            animacy=test_params.animacy,
         ).order_by("?")[:count]
 
         return [

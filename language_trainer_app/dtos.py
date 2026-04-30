@@ -6,7 +6,7 @@ Django ORM models.
 """
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 @dataclass
@@ -17,6 +17,7 @@ class TestParameters:
     genders: List[int]  # Род (один или много), список ID родов
     cases: List[int]  # Падеж (один или много), список ID падежей
     numbers: List[int]  # Число (один или много), список ID чисел
+    animacy: Optional[str] = None  # 'Anim' / 'Inan' / None (все слова)
 
 
 @dataclass

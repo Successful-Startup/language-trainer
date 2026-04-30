@@ -41,8 +41,8 @@ class WordNumberAdmin(admin.ModelAdmin):
 
 @admin.register(Word)
 class WordAdmin(admin.ModelAdmin):
-    list_display = ["id", "base_form", "gender", "part_of_speech"]
-    list_filter = ["gender", "part_of_speech"]
+    list_display = ["id", "base_form", "gender", "part_of_speech", "animacy"]
+    list_filter = ["gender", "part_of_speech", "animacy"]
     search_fields = ["base_form"]
     ordering = ["base_form"]
     show_full_result_count = False
