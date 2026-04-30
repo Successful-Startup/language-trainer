@@ -43,6 +43,11 @@ GENDER_MAP = {
     "neut": "Средний",
 }
 
+ANIMACY_MAP = {
+    "anim": "Одушевлённое",
+    "inan": "Неодушевлённое",
+}
+
 SKIP_RE = re.compile(r"[-\d./]")
 
 # pymorphy3 tags that mark proper nouns (names, surnames, patronymics, etc.)
@@ -86,8 +91,15 @@ def collect_lemmas(morph, pos_tag, limit=0):
             gender_tag = "masc"
 
         gender_name = GENDER_MAP.get(gender_tag, "")
+
+        # Animacy applies only to nouns; adjectives leave it blank.
+        animacy_name = ""
+        if pos_tag == "NOUN":
+            raw_animacy = str(tag.animacy) if tag.animacy else None
+            animacy_name = ANIMACY_MAP.get(raw_animacy, "")
+
         seen.add(normal)
-        lemmas.append((normal.lower(), gender_name))
+        lemmas.append((normal.lower(), gender_name, animacy_name))
 
     return lemmas
 
@@ -133,13 +145,15 @@ def main():
         print(f"  Found {len(lemmas)} lemmas.")
 
         pos_name = POS_MAP[pos_tag]
-        for base_form, gender_name in lemmas:
-            all_lemmas.append((base_form, pos_name, gender_name))
+        for base_form, gender_name, animacy_name in lemmas:
+            all_lemmas.append((base_form, pos_name, gender_name, animacy_name))
 
     # Write CSV
     with open(args.output, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
-        writer.writerow(["base_form", "part_of_speech_name", "gender_name"])
+        writer.writerow(
+            ["base_form", "part_of_speech_name", "gender_name", "animacy_name"]
+        )
         for row in all_lemmas:
             writer.writerow(row)
 

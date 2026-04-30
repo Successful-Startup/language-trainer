@@ -8,5 +8,5 @@ class WordSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Word
-        fields = ["id", "base_form", "gender", "part_of_speech"]
+        fields = ["id", "base_form", "gender", "part_of_speech", "animacy"]
         read_only_fields = ["id"]
