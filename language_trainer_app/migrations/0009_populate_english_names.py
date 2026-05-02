@@ -1,6 +1,5 @@
 from django.db import migrations
 
-
 CASE_TRANSLATIONS = {
     "Именительный": "Nominative",
     "Родительный": "Genitive",
