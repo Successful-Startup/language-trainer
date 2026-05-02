@@ -8,5 +8,5 @@ class GenderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Gender
-        fields = ["id", "name"]
+        fields = ["id", "name", "name_en"]
         read_only_fields = ["id"]

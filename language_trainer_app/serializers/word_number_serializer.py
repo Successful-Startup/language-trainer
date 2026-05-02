@@ -8,5 +8,5 @@ class WordNumberSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WordNumber
-        fields = ["id", "name"]
+        fields = ["id", "name", "name_en"]
         read_only_fields = ["id"]

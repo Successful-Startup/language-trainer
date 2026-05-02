@@ -8,5 +8,5 @@ class PartOfSpeechSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PartOfSpeech
-        fields = ["id", "name"]
+        fields = ["id", "name", "name_en"]
         read_only_fields = ["id"]
