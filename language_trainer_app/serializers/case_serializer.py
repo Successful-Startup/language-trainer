@@ -8,5 +8,5 @@ class CaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Case
-        fields = ["id", "name"]
+        fields = ["id", "name", "name_en"]
         read_only_fields = ["id"]
