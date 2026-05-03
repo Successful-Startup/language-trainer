@@ -27,3 +27,4 @@ class TestItem:
     context: str  # часть предложения до пропуска
     noun_with_adjective: str  # пара в скобках, например, "красивая машина"
     correct_answer: str  # правильный ответ в нужном падеже, например, "красивой машине"
+    number_name_en: str  # English name of the word number, e.g. "Singular" / "Plural"
