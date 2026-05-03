@@ -100,4 +100,5 @@ class TestGeneratorService:
             context=context,
             noun_with_adjective=noun_with_adjective,
             correct_answer=correct_answer,
+            number_name_en=pair.noun_form.number.name_en,
         )
