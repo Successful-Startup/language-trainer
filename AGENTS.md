@@ -7,7 +7,7 @@ Django REST API for the Language Trainer application.
 | Component | Technology |
 |---|---|
 | Language | Python 3.12 |
-| Framework | Django 5.0 + Django REST Framework 3.15 |
+| Framework | Django 5.2 (long-term support line) + Django REST Framework 3.18 |
 | Database | PostgreSQL 16 |
 | Auth | JWT via `djangorestframework-simplejwt` |
 | CORS | `django-cors-headers` |
