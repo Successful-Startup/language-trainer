@@ -341,6 +341,13 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 
 ## Testing Approach — TDD
 
+**Test goal: 100% test coverage.** The project is not there yet. Old code gets its tests in separate tasks.
+
+- Prefer acceptance tests that follow the real user flow: HTTP requests through the API with a real test database. Log in through `/auth/login/` and send the JWT. Example: `language_trainer_app/tests/test_acceptance_lists.py`.
+- Every new feature and every bug fix must be fully covered with acceptance tests in the same PR.
+- Tests never run on production and never connect to the production database. Django creates a temporary test database for each run, and each test creates its own rows.
+- Next steps to the goal: a coverage tool for this repo (there is none yet), and browser E2E tests on a separate test stack.
+
 **Always follow Test-Driven Development (Red → Green → Refactor):**
 
 1. Write a failing test first
