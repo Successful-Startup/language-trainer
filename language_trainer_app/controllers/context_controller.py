@@ -11,3 +11,5 @@ class ContextViewSet(viewsets.ModelViewSet):
     queryset = Context.objects.all()
     serializer_class = ContextSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    # The UI filters this list on the client, so it needs all rows.
+    pagination_class = None

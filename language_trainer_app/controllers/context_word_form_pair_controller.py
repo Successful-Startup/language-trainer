@@ -19,3 +19,5 @@ class ContextWordFormPairViewSet(viewsets.ModelViewSet):
     ).all()
     serializer_class = ContextWordFormPairSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    # The UI filters this list on the client, so it needs all rows.
+    pagination_class = None
