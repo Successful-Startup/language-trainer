@@ -119,8 +119,10 @@ Each resource provides `GET /`, `POST /`, `GET /{id}/`, `PUT /{id}/`, `PATCH /{i
 | Parts of speech | `/parts-of-speech/` | Read-only for all; write requires auth | — |
 | Word numbers | `/word-numbers/` | Read-only for all; write requires auth | — |
 | Word forms | `/word-forms/` | `IsAuthenticatedOrReadOnly` | `?search=` partial search on `word_form` and `word__base_form`; `match=exact` switches to case-insensitive exact search on `word_form` (default) or `word__base_form` (with `search_field=base_form`); `word_part_of_speech=` narrows results |
-| Contexts | `/contexts/` | Read-only for all; write requires auth | — |
-| Context-word-form pairs | `/context-word-form-pairs/` | `IsAuthenticatedOrReadOnly` | — |
+| Contexts | `/contexts/` | Read-only for all; write requires auth | — (not paginated, returns a plain array) |
+| Context-word-form pairs | `/context-word-form-pairs/` | `IsAuthenticatedOrReadOnly` | — (not paginated, returns a plain array) |
+
+List responses are paginated with 100 rows per page (`{count, next, previous, results}`). `/contexts/` and `/context-word-form-pairs/` are the exception (`pagination_class = None`): the frontend filters these lists on the client, so it needs all rows. Do not turn pagination off for `/words/` or `/word-forms/`. They hold too many rows for one response.
 
 `WordViewSet` and `WordFormViewSet` both use DRF's `SearchFilter` (`filter_backends = [filters.SearchFilter]`). Passing `?search=term` performs a case-insensitive `icontains` match across all listed search fields by default.
 

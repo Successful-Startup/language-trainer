@@ -95,9 +95,8 @@ class TestContextWordFormPairListQueries:
         self, api_client, reference_data, django_assert_num_queries
     ):
         self._make_pairs(reference_data, 1)
-        with django_assert_num_queries(2):
-            # 1: COUNT(*) for pagination
-            # 2: SELECT ... with all select_related joins
+        with django_assert_num_queries(1):
+            # SELECT ... with all select_related joins. The list is not paginated.
             response = api_client.get(self.url)
         assert response.status_code == 200
 
@@ -106,7 +105,24 @@ class TestContextWordFormPairListQueries:
     ):
         """Doubling the number of rows must NOT increase the query count."""
         self._make_pairs(reference_data, 5)
-        with django_assert_num_queries(2):
+        with django_assert_num_queries(1):
             response = api_client.get(self.url)
         assert response.status_code == 200
-        assert len(response.data["results"]) == 5
+        assert len(response.data) == 5
+
+
+class TestContextListQueries:
+    """GET /contexts/ must read the whole list with one query."""
+
+    url = "/contexts/"
+
+    def test_multiple_items_single_query(
+        self, api_client, db, django_assert_num_queries
+    ):
+        Context.objects.bulk_create(
+            Context(text=f"В ____ {i} живёт семья") for i in range(5)
+        )
+        with django_assert_num_queries(1):
+            response = api_client.get(self.url)
+        assert response.status_code == 200
+        assert len(response.data) == 5
