@@ -52,7 +52,7 @@ class TestGeneratorService:
         Random selection is pushed to the database via ORDER BY RANDOM() so
         that no unnecessary rows are transferred to Python.
 
-        A non-positive *count* returns an empty list immediately.
+        A non-positive *count* returns an empty list.
         """
         count = max(count, 0)
 
