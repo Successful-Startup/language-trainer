@@ -6,6 +6,7 @@ from language_trainer_app.models.context import Context
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
 from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_form import WordForm
+from language_trainer_app.models.word_number import WordNumber
 
 URL = "/tests/generate/"
 UNKNOWN_ID = 999999
@@ -85,13 +86,14 @@ def test_noun_only_shows_base_form_and_expects_case_form(api_client, rd):
 def test_adjective_hint_is_nominative_form_for_noun_gender(
     api_client, rd, feminine_noun_with_adjective
 ):
-    make_form(
-        feminine_noun_with_adjective,
-        rd["case_nom"],
-        "красивая",
-        rd["number_sg"],
-        rd["gender_f"],
-    )
+    for word_form, gender in (("красивый", "gender_m"), ("красивая", "gender_f")):
+        make_form(
+            feminine_noun_with_adjective,
+            rd["case_nom"],
+            word_form,
+            rd["number_sg"],
+            rd[gender],
+        )
 
     response = generate(
         api_client, rd, "case_gen", use_adjective=True, gender=rd["gender_f"]
@@ -101,6 +103,34 @@ def test_adjective_hint_is_nominative_form_for_noun_gender(
     [item] = response.json()
     assert item["noun_with_adjective"] == "красивая машина"
     assert item["correct_answer"] == "красивой машины"
+
+
+def test_adjective_hint_is_nominative_form_for_noun_number(api_client, rd):
+    number_pl = WordNumber.objects.create(name="множественное", name_en="Plural")
+    noun = make_noun(rd, "машина", rd["gender_f"])
+    noun_gen_pl = make_form(noun, rd["case_gen"], "машин", number_pl)
+    adjective = Word.objects.create(base_form="красивый", part_of_speech=rd["pos_adj"])
+    adjective_gen_pl = make_form(
+        adjective, rd["case_gen"], "красивых", number_pl, rd["gender_f"]
+    )
+    for word_form, number in (("красивая", rd["number_sg"]), ("красивые", number_pl)):
+        make_form(adjective, rd["case_nom"], word_form, number, rd["gender_f"])
+    make_pair("нет ____", noun_gen_pl, adjective_gen_pl)
+
+    response = generate(
+        api_client,
+        rd,
+        "case_gen",
+        use_adjective=True,
+        gender=rd["gender_f"],
+        numbers=[number_pl.id],
+    )
+
+    assert response.status_code == 200
+    [item] = response.json()
+    assert item["noun_with_adjective"] == "красивые машина"
+    assert item["correct_answer"] == "красивых машин"
+    assert item["number_name_en"] == "Plural"
 
 
 def test_adjective_hint_falls_back_to_base_form_without_nominative_form(
@@ -128,6 +158,52 @@ def test_with_adjective_leaves_out_pairs_without_adjective(
 
     assert response.status_code == 200
     assert [item["context"] for item in response.json()] == ["нет ____"]
+
+
+def test_with_adjective_leaves_out_adjectives_in_another_case_or_number(
+    api_client, rd, feminine_noun_with_adjective
+):
+    number_pl = WordNumber.objects.create(name="множественное", name_en="Plural")
+    noun = Word.objects.get(base_form="машина")
+    noun_gen = WordForm.objects.get(word=noun, case=rd["case_gen"])
+    adjective_nom = make_form(
+        feminine_noun_with_adjective,
+        rd["case_nom"],
+        "красивая",
+        rd["number_sg"],
+        rd["gender_f"],
+    )
+    adjective_gen_pl = make_form(
+        feminine_noun_with_adjective,
+        rd["case_gen"],
+        "красивых",
+        number_pl,
+        rd["gender_f"],
+    )
+    make_pair("другой падеж ____", noun_gen, adjective_nom)
+    make_pair("другое число ____", noun_gen, adjective_gen_pl)
+
+    response = generate(
+        api_client, rd, "case_gen", use_adjective=True, gender=rd["gender_f"]
+    )
+
+    assert response.status_code == 200
+    assert [item["context"] for item in response.json()] == ["нет ____"]
+
+
+def test_noun_filters_keep_only_the_chosen_gender_case_and_number(api_client, rd):
+    number_pl = WordNumber.objects.create(name="множественное", name_en="Plural")
+    house = make_noun(rd, "дом", rd["gender_m"])
+    car = make_noun(rd, "машина", rd["gender_f"])
+    make_pair("у ____", make_form(house, rd["case_gen"], "дома", rd["number_sg"]))
+    make_pair("у двух ____", make_form(house, rd["case_gen"], "домов", number_pl))
+    make_pair("к ____", make_form(house, rd["case_dat"], "дому", rd["number_sg"]))
+    make_pair("нет ____", make_form(car, rd["case_gen"], "машины", rd["number_sg"]))
+
+    response = generate(api_client, rd, "case_gen")
+
+    assert response.status_code == 200
+    assert [item["correct_answer"] for item in response.json()] == ["дома"]
 
 
 def test_animacy_filter_keeps_only_matching_nouns(api_client, rd):
