@@ -158,7 +158,7 @@ class TestEveryImportEndpoint:
         assert not endpoint.imported_rows().exists()
 
     def test_reads_the_header_of_a_file_with_a_bom(self, auth_client, endpoint):
-        content = "﻿" + csv_lines(endpoint.header, endpoint.valid_row)
+        content = "\ufeff" + csv_lines(endpoint.header, endpoint.valid_row)
 
         response = upload(auth_client, endpoint, content)
 
