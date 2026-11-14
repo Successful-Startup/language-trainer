@@ -8,6 +8,7 @@ PostgreSQL only, the database of production.
 import pytest
 from django.db import connection
 
+from language_trainer_app.models.part_of_speech import PartOfSpeech
 from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_form import WordForm
 from language_trainer_app.models.word_number import WordNumber
@@ -16,19 +17,20 @@ WORDS_URL = "/words/"
 WORD_FORMS_URL = "/word-forms/"
 
 
-def make_word(rd, base_form, pos="pos_noun", gender="gender_m"):
+def make_word(rd, base_form, pos="pos_noun", gender="gender_m", animacy=None):
     return Word.objects.create(
         base_form=base_form,
         part_of_speech=rd[pos],
         gender=rd[gender] if gender else None,
+        animacy=animacy,
     )
 
 
-def make_form(rd, word, word_form, case="case_nom", number=None):
+def make_form(rd, word, word_form, case="case_nom", number=None, gender=None):
     return WordForm.objects.create(
         word=word,
         case=rd[case],
-        gender=None,
+        gender=rd[gender] if gender else None,
         number=number or rd["number_sg"],
         word_form=word_form,
     )
@@ -58,13 +60,17 @@ def words(reference_data):
 def same_base_form_words(reference_data):
     """'рабочий' is both a noun (a worker) and an adjective (working)."""
     rd = reference_data
-    noun = make_word(rd, "рабочий")
+    noun = make_word(rd, "рабочий", animacy=Word.Animacy.ANIMATE)
     adjective = make_word(rd, "рабочий", pos="pos_adj", gender=None)
+    noun_form = make_form(rd, noun, "рабочего", case="case_gen")
+    adjective_form = make_form(
+        rd, adjective, "рабочего", case="case_gen", gender="gender_m"
+    )
     return {
         "noun": noun,
         "adjective": adjective,
-        "noun_form": make_form(rd, noun, "рабочего", case="case_gen"),
-        "adjective_form": make_form(rd, adjective, "рабочего", case="case_gen"),
+        "noun_form": noun_form,
+        "adjective_form": adjective_form,
         "noun_nominative": make_form(rd, noun, "рабочий"),
     }
 
@@ -84,7 +90,7 @@ def name_and_noun(reference_data):
 
 
 class TestWordPartialSearch:
-    def test_ranks_exact_then_prefix_then_contains(self, api_client, words):
+    def test_lists_prefix_matches_before_contains_matches(self, api_client, words):
         found = search(api_client, WORDS_URL, search="дом")
 
         assert found == ids(
@@ -156,14 +162,37 @@ class TestWordExactSearch:
     def test_no_match_returns_no_words(self, api_client, words):
         assert search(api_client, WORDS_URL, search="до", match="exact") == []
 
-    def test_returns_every_part_of_speech_with_that_base_form(
+    def test_returns_every_part_of_speech_with_that_base_form_newest_first(
         self, api_client, same_base_form_words
     ):
         found = search(api_client, WORDS_URL, search="рабочий", match="exact")
 
-        assert sorted(found) == sorted(
-            ids(same_base_form_words["noun"], same_base_form_words["adjective"])
+        assert found == ids(
+            same_base_form_words["adjective"], same_base_form_words["noun"]
         )
+
+    def test_row_has_the_fields_the_frontend_reads(
+        self, api_client, reference_data, same_base_form_words
+    ):
+        response = api_client.get(
+            WORDS_URL,
+            {
+                "search": "рабочий",
+                "match": "exact",
+                "part_of_speech": reference_data["pos_noun"].id,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["results"] == [
+            {
+                "id": same_base_form_words["noun"].id,
+                "base_form": "рабочий",
+                "part_of_speech": reference_data["pos_noun"].id,
+                "gender": reference_data["gender_m"].id,
+                "animacy": "Anim",
+            }
+        ]
 
     @pytest.mark.parametrize("pos", ["noun", "adjective"])
     def test_part_of_speech_filter_narrows_exact_search(
@@ -216,9 +245,11 @@ def person_forms(reference_data):
     plural = WordNumber.objects.create(name="множественное")
     person = make_word(rd, "человек")
     god_man = make_word(rd, "богочеловек")
+    # Forms with the same rank are added out of alphabetical order.
     return {
-        "человек": make_form(rd, person, "человек"),
+        "человеку": make_form(rd, person, "человеку", case="case_dat"),
         "человека": make_form(rd, person, "человека", case="case_gen"),
+        "человек": make_form(rd, person, "человек"),
         "люди": make_form(rd, person, "люди", number=plural),
         "богочеловека": make_form(rd, god_man, "богочеловека", case="case_gen"),
         "кошке": make_form(
@@ -227,14 +258,37 @@ def person_forms(reference_data):
     }
 
 
+@pytest.fixture
+def pronoun_forms(reference_data):
+    """'ей' (of 'она') sorts before 'ему' (of 'он'), against their ranks for 'он'."""
+    rd = dict(reference_data, pos_pron=PartOfSpeech.objects.create(name="местоимение"))
+    he = make_word(rd, "он", pos="pos_pron")
+    she = make_word(rd, "она", pos="pos_pron", gender="gender_f")
+    return {
+        "она": make_form(rd, she, "она"),
+        "ей": make_form(rd, she, "ей", case="case_dat"),
+        "ему": make_form(rd, he, "ему", case="case_dat"),
+        "он": make_form(rd, he, "он"),
+    }
+
+
 class TestWordFormPartialSearch:
+    def test_base_form_equal_to_term_ranks_before_base_form_prefix(
+        self, api_client, pronoun_forms
+    ):
+        found = search(api_client, WORD_FORMS_URL, search="он")
+
+        assert found == ids(
+            *(pronoun_forms[form] for form in ("он", "она", "ему", "ей"))
+        )
+
     @pytest.mark.parametrize(
         "term, expected",
         [
             # word form exact, word form prefix, base form exact, contains
-            ("человек", ["человек", "человека", "люди", "богочеловека"]),
+            ("человек", ["человек", "человека", "человеку", "люди", "богочеловека"]),
             # word form prefix, base form prefix, contains
-            ("чел", ["человек", "человека", "люди", "богочеловека"]),
+            ("чел", ["человек", "человека", "человеку", "люди", "богочеловека"]),
             ("люд", ["люди"]),
         ],
     )
@@ -306,7 +360,12 @@ class TestWordFormExactSearch:
         )
 
         assert sorted(found) == sorted(
-            ids(person_forms["человек"], person_forms["человека"], person_forms["люди"])
+            ids(
+                person_forms["человек"],
+                person_forms["человека"],
+                person_forms["человеку"],
+                person_forms["люди"],
+            )
         )
 
     @pytest.mark.parametrize("search_field", [None, "base_form"])
@@ -319,18 +378,49 @@ class TestWordFormExactSearch:
 
         assert search(api_client, WORD_FORMS_URL, **params) == []
 
-    def test_part_of_speech_filter_narrows_exact_word_form_search(
-        self, api_client, reference_data, same_base_form_words
+    def test_match_mode_ignores_case_and_spaces(self, api_client, person_forms):
+        found = search(api_client, WORD_FORMS_URL, search=" человек ", match=" EXACT ")
+
+        assert found == ids(person_forms["человек"])
+
+    def test_same_word_form_of_two_words_comes_newest_first(
+        self, api_client, same_base_form_words
     ):
-        found = search(
-            api_client,
-            WORD_FORMS_URL,
-            search="рабочего",
-            match="exact",
-            word_part_of_speech=reference_data["pos_adj"].id,
+        found = search(api_client, WORD_FORMS_URL, search="рабочего", match="exact")
+
+        assert found == ids(
+            same_base_form_words["adjective_form"], same_base_form_words["noun_form"]
         )
 
-        assert found == ids(same_base_form_words["adjective_form"])
+    def test_row_has_the_fields_the_frontend_reads(
+        self, api_client, reference_data, same_base_form_words
+    ):
+        response = api_client.get(
+            WORD_FORMS_URL,
+            {
+                "search": "рабочего",
+                "match": "exact",
+                "word_part_of_speech": reference_data["pos_adj"].id,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["results"] == [
+            {
+                "id": same_base_form_words["adjective_form"].id,
+                "word": {
+                    "id": same_base_form_words["adjective"].id,
+                    "base_form": "рабочий",
+                    "part_of_speech": reference_data["pos_adj"].id,
+                    "gender": None,
+                    "animacy": None,
+                },
+                "case": reference_data["case_gen"].id,
+                "gender": reference_data["gender_m"].id,
+                "number": reference_data["number_sg"].id,
+                "word_form": "рабочего",
+            }
+        ]
 
     def test_part_of_speech_filter_narrows_exact_base_form_search(
         self, api_client, reference_data, same_base_form_words
