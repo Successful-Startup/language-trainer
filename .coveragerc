@@ -10,6 +10,9 @@ omit =
     language_trainer_project/asgi.py
 
 [report]
+# Replaces the default list, so "# pragma: no cover" excludes nothing.
+exclude_lines =
+    a^
 # The gate only moves up. Each stage sets it to the value it reached.
 fail_under = 64.37
 precision = 2

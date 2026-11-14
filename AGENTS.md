@@ -347,7 +347,7 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 - Every new feature and every bug fix must be fully covered with acceptance tests in the same PR.
 - Tests never run on production and never connect to the production database. Django creates a temporary test database for each run, and each test creates its own rows.
 - Only the tests in `language_trainer_app/tests/acceptance/` count for coverage. The other tests still run, but they do not count.
-- The gate is `fail_under` in `.coveragerc` (branch coverage). It only moves up: each PR sets it to the value it reached. `# pragma: no cover` is not allowed; code that no user flow reaches gets deleted.
+- The gate is `fail_under` in `.coveragerc` (branch coverage). It only moves up: each PR sets it to the value it reached. `# pragma: no cover` is not allowed (`.coveragerc` makes it exclude nothing); code that no user flow reaches gets deleted.
 - CI (`.github/workflows/tests.yml`) runs the acceptance tests twice, on SQLite and on PostgreSQL 16, adds the two coverage results together and checks the gate.
 - Next step to the goal: browser E2E tests on a separate test stack.
 
@@ -361,10 +361,10 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 
 ```bash
 pytest                                   # all tests
-pytest language_trainer_app/tests/acceptance --cov   # acceptance coverage and the gate (SQLite only)
+pytest language_trainer_app/tests/acceptance --cov --cov-fail-under=0   # acceptance coverage, SQLite only
 ```
 
-The CI number is higher than the SQLite-only number, because some code runs only on PostgreSQL. To measure the sum locally, run the acceptance tests once per database with `COVERAGE_FILE=.coverage.<db>` and `--cov-fail-under=0`, then `coverage combine` and `coverage report`.
+The gate in `.coveragerc` is the CI number, the sum of both databases. The SQLite-only number is lower, because some code runs only on PostgreSQL, so without `--cov-fail-under=0` the SQLite-only run fails on the gate. To measure the sum locally, run the acceptance tests once per database with `COVERAGE_FILE=.coverage.<db>` and `--cov-fail-under=0`, then `coverage combine` and `coverage report`.
 
 **What to test:**
 
