@@ -140,7 +140,8 @@ def safe_get_row_value(row, field_name, required=True):
     Raises:
         ValueError: if a required field is empty.
     """
-    value: str = row.get(field_name, "").strip()
+    # csv.DictReader puts None into the columns that a short row does not have.
+    value: str = (row.get(field_name) or "").strip()
 
     if not value:
         if required:

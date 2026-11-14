@@ -263,6 +263,31 @@ class TestImportWordsEndpoint:
         assert response.data["error_details"] == ["Row 2: base_form is required"]
         assert not Word.objects.exists()
 
+    def test_imports_a_short_row_with_the_optional_columns_blank(
+        self, auth_client, reference_data
+    ):
+        content = csv_lines(WORDS.header, "идти,существительное")
+
+        response = upload(auth_client, WORDS, content)
+
+        assert response.data["created"] == 1
+        assert response.data["error_details"] == []
+        word = Word.objects.get(base_form="идти")
+        assert word.gender is None
+        assert word.animacy is None
+
+    def test_names_the_required_column_missing_from_a_short_row(
+        self, auth_client, reference_data
+    ):
+        content = csv_lines(WORDS.header, "идти")
+
+        response = upload(auth_client, WORDS, content)
+
+        assert response.data["created"] == 0
+        assert response.data["error_details"] == [
+            "Row 2: part_of_speech_name is required"
+        ]
+
     @pytest.mark.parametrize(
         "animacy_name, animacy",
         [
