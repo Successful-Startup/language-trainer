@@ -1,0 +1,17 @@
+[run]
+branch = True
+source =
+    language_trainer_app
+    language_trainer_project
+omit =
+    */tests/*
+    */migrations/*
+    language_trainer_project/wsgi.py
+    language_trainer_project/asgi.py
+
+[report]
+# The gate only moves up. Each stage sets it to the value it reached.
+fail_under = 64.13
+precision = 2
+show_missing = True
+skip_covered = True

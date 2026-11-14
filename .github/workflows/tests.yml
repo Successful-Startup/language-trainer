@@ -1,0 +1,66 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DJANGO_SECRET_KEY: this-is-a-long-enough-ci-secret-key-for-tests
+      DJANGO_DEBUG: 'True'
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      # The gate applies to the sum of both runs, so a single run must not fail on it.
+      - name: Acceptance tests on SQLite
+        env:
+          DB_DRIVER: django.db.backends.sqlite3
+          COVERAGE_FILE: .coverage.sqlite
+        run: pytest language_trainer_app/tests/acceptance --cov --cov-report= --cov-fail-under=0
+
+      - name: Acceptance tests on PostgreSQL 16
+        env:
+          DB_DRIVER: django.db.backends.postgresql
+          PG_HOST: localhost
+          PG_PORT: '5432'
+          PG_USER: postgres
+          PG_PASSWORD: postgres
+          COVERAGE_FILE: .coverage.postgresql
+        run: pytest language_trainer_app/tests/acceptance --cov --cov-report= --cov-fail-under=0
+
+      - name: Other tests on SQLite
+        env:
+          DB_DRIVER: django.db.backends.sqlite3
+        run: pytest --ignore=language_trainer_app/tests/acceptance
+
+      - name: Acceptance coverage gate
+        run: |
+          coverage combine .coverage.sqlite .coverage.postgresql
+          coverage report

@@ -38,10 +38,3 @@ jobs:
           DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,testserver
           DB_DRIVER: django.db.backends.sqlite3
         run: python manage.py check --deploy
-
-      - name: Run tests
-        env:
-          DJANGO_SECRET_KEY: this-is-a-long-enough-ci-secret-key-for-tests
-          DJANGO_DEBUG: 'True'
-          DB_DRIVER: django.db.backends.sqlite3
-        run: pytest

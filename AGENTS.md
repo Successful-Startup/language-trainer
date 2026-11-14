@@ -13,7 +13,7 @@ Django REST API for the Language Trainer application.
 | CORS | `django-cors-headers` |
 | WSGI server | Gunicorn 23 |
 | Containerization | Docker + docker-compose |
-| CI | GitHub Actions (Black formatter check + security workflow with pip-audit, pip check, deploy checks, pytest) |
+| CI | GitHub Actions (Black formatter check, security workflow with pip-audit, pip check and deploy checks, tests workflow with the acceptance coverage gate) |
 
 ---
 
@@ -263,7 +263,7 @@ Phrase ──▶ Word (M2M: valid_words)
 
 - Runtime dependency pins live in `requirements.txt`; development tools live in `requirements-dev.txt`.
 - The application Docker image now installs only `requirements.txt`, so dev-only packages like `black` are not shipped in the runtime container.
-- The backend repo now has a dedicated `.github/workflows/security.yml` workflow that runs `pip-audit`, `pip check`, `python manage.py check --deploy`, and `pytest` on every push and pull request.
+- The backend repo has a dedicated `.github/workflows/security.yml` workflow that runs `pip-audit`, `pip check` and `python manage.py check --deploy` on every push and pull request. The tests run in `.github/workflows/tests.yml` (see Testing Approach).
 - Local validation after dependency changes should cover both dependency health and behavior: `pip check`, `pytest`, and at least one `manage.py check --deploy` run.
 
 | Setting | Value |
@@ -343,10 +343,13 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 
 **Test goal: 100% test coverage.** The project is not there yet. Old code gets its tests in separate tasks.
 
-- Prefer acceptance tests that follow the real user flow: HTTP requests through the API with a real test database. Log in through `/auth/login/` and send the JWT. Example: `language_trainer_app/tests/test_acceptance_lists.py`.
+- Prefer acceptance tests that follow the real user flow: HTTP requests through the API with a real test database. Log in through `/auth/login/` and send the JWT (the `auth_client` fixture does this). Put them in `language_trainer_app/tests/acceptance/`. Example: `language_trainer_app/tests/acceptance/test_acceptance_lists.py`.
 - Every new feature and every bug fix must be fully covered with acceptance tests in the same PR.
 - Tests never run on production and never connect to the production database. Django creates a temporary test database for each run, and each test creates its own rows.
-- Next steps to the goal: a coverage tool for this repo (there is none yet), and browser E2E tests on a separate test stack.
+- Only the tests in `language_trainer_app/tests/acceptance/` count for coverage. The other tests still run, but they do not count.
+- The gate is `fail_under` in `.coveragerc` (branch coverage). It only moves up: each PR sets it to the value it reached. `# pragma: no cover` is not allowed; code that no user flow reaches gets deleted.
+- CI (`.github/workflows/tests.yml`) runs the acceptance tests twice, on SQLite and on PostgreSQL 16, adds the two coverage results together and checks the gate.
+- Next step to the goal: browser E2E tests on a separate test stack.
 
 **Always follow Test-Driven Development (Red → Green → Refactor):**
 
@@ -357,10 +360,11 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 **Test runner:** Django's built-in `TestCase` + `pytest-django` (if available)
 
 ```bash
-python manage.py test
-# or
-pytest
+pytest                                   # all tests
+pytest language_trainer_app/tests/acceptance --cov   # acceptance coverage and the gate (SQLite only)
 ```
+
+The CI number is higher than the SQLite-only number, because some code runs only on PostgreSQL. To measure the sum locally, run the acceptance tests once per database with `COVERAGE_FILE=.coverage.<db>` and `--cov-fail-under=0`, then `coverage combine` and `coverage report`.
 
 **What to test:**
 
