@@ -10,6 +10,7 @@ from django.db.models import QuerySet
 from language_trainer_app.models.context import Context
 from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_form import WordForm
+from language_trainer_app.models.word_number import WordNumber
 from language_trainer_app.tests.conftest import make_csv_file
 
 TEN_MB = 10 * 1024 * 1024
@@ -183,13 +184,24 @@ class TestEveryImportEndpoint:
             "error_details": [],
         }
 
-    def test_skips_a_row_that_already_exists(self, auth_client, endpoint):
+    def test_skips_a_row_repeated_in_the_same_file(self, auth_client, endpoint):
         content = csv_lines(endpoint.header, endpoint.valid_row, endpoint.valid_row)
 
         response = upload(auth_client, endpoint, content)
 
         assert response.status_code == 200
         assert response.data["created"] == 1
+        assert response.data["skipped"] == 1
+        assert endpoint.imported_rows().count() == 1
+
+    def test_skips_a_row_imported_by_an_earlier_upload(self, auth_client, endpoint):
+        content = csv_lines(endpoint.header, endpoint.valid_row)
+        upload(auth_client, endpoint, content)
+
+        response = upload(auth_client, endpoint, content)
+
+        assert response.status_code == 200
+        assert response.data["created"] == 0
         assert response.data["skipped"] == 1
         assert endpoint.imported_rows().count() == 1
 
@@ -215,19 +227,61 @@ class TestEveryImportEndpoint:
         assert not endpoint.imported_rows().exists()
 
 
+@pytest.mark.parametrize(
+    "spec, header, missing",
+    [
+        pytest.param(
+            WORDS, "base_form,gender_name", ["part_of_speech_name"], id="words"
+        ),
+        pytest.param(
+            WORD_FORMS,
+            "word_base_form,word_part_of_speech_name,word_form,form_gender_name",
+            ["case_name", "number_name"],
+            id="word-forms",
+        ),
+    ],
+)
+def test_names_only_the_required_headers_that_are_missing(
+    auth_client, spec, header, missing
+):
+    response = upload(auth_client, spec, csv_lines(header, "a,b,c,d"))
+
+    assert response.status_code == 400
+    assert response.data == {
+        "success": False,
+        "error": f"Missing required headers: {missing}",
+    }
+
+
+def test_accepts_a_file_of_exactly_10_mb(auth_client, reference_data):
+    content = csv_lines(WORDS.header, WORDS.valid_row).encode("utf-8")
+    content += b"\n" * (TEN_MB - len(content))
+
+    response = upload(auth_client, WORDS, content)
+
+    assert response.status_code == 200
+    assert response.data["created"] == 1
+    assert WORDS.imported_rows().count() == 1
+
+
 class TestImportWordsEndpoint:
     url = "/api/import/words/"
 
-    def test_successful_import(self, auth_client, reference_data):
-        csv_content = (
-            "base_form,part_of_speech_name,gender_name\nдом,существительное,мужской\n"
-        )
-        f = make_csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": f}, format="multipart")
+    def test_saves_the_word_in_lower_case_with_its_references(
+        self, auth_client, reference_data
+    ):
+        content = csv_lines(WORDS.header, "КоШка,существительное,женский,Одушевлённое")
+
+        response = upload(auth_client, WORDS, content)
+
         assert response.status_code == 200
         assert response.data["success"] is True
         assert response.data["created"] == 1
-        assert Word.objects.filter(base_form="дом").exists()
+        word = Word.objects.get()
+        assert word.base_form == "кошка"
+        assert word.part_of_speech == reference_data["pos_noun"]
+        assert word.gender == reference_data["gender_f"]
+        assert word.animacy == Word.Animacy.ANIMATE
 
     def test_reports_error_for_invalid_pos(self, auth_client, reference_data):
         csv_content = (
@@ -373,20 +427,67 @@ class TestImportContextsEndpoint:
 class TestImportWordFormsEndpoint:
     url = "/api/import/word-forms/"
 
-    def test_successful_import(self, auth_client, reference_data):
+    def test_saves_the_form_in_lower_case_with_its_references(
+        self, auth_client, reference_data
+    ):
+        rd = reference_data
+        adjective = Word.objects.create(
+            base_form="красивый", part_of_speech=rd["pos_adj"]
+        )
+        plural = WordNumber.objects.create(name="множественное")
+        content = csv_lines(
+            WORD_FORMS.header,
+            "Красивый,прилагательное,,КрасивОЙ,родительный,женский,множественное",
+        )
+
+        response = upload(auth_client, WORD_FORMS, content)
+
+        assert response.status_code == 200
+        assert response.data["success"] is True
+        assert response.data["created"] == 1
+        form = WordForm.objects.get()
+        assert form.word_form == "красивой"
+        assert form.word == adjective
+        assert form.case == rd["case_gen"]
+        assert form.number == plural
+        assert form.gender == rd["gender_f"]
+
+    def test_imports_a_short_row_with_the_optional_column_blank(
+        self, auth_client, reference_data
+    ):
         rd = reference_data
         Word.objects.create(
             base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
         )
-        csv_content = (
+        header = (
             "word_base_form,word_part_of_speech_name,word_gender_name,"
-            "word_form,case_name,form_gender_name,number_name\n"
-            "дом,существительное,мужской,дом,именительный,,единственное\n"
+            "word_form,case_name,number_name,form_gender_name"
         )
-        f = make_csv_file(csv_content)
-        response = auth_client.post(self.url, {"file": f}, format="multipart")
-        assert response.status_code == 200
+        content = csv_lines(
+            header, "дом,существительное,мужской,дома,родительный,единственное"
+        )
+
+        response = upload(auth_client, WORD_FORMS, content)
+
+        assert response.data["error_details"] == []
         assert response.data["created"] == 1
+        assert WordForm.objects.get(word_form="дома").gender is None
+
+    def test_names_the_required_column_missing_from_a_short_row(
+        self, auth_client, reference_data
+    ):
+        rd = reference_data
+        Word.objects.create(
+            base_form="дом", part_of_speech=rd["pos_noun"], gender=rd["gender_m"]
+        )
+        content = csv_lines(
+            WORD_FORMS.header, "дом,существительное,мужской,дома,родительный"
+        )
+
+        response = upload(auth_client, WORD_FORMS, content)
+
+        assert response.data["created"] == 0
+        assert response.data["error_details"] == ["Row 2: number_name is required"]
 
     def test_error_when_word_not_found(self, auth_client, reference_data):
         csv_content = (
