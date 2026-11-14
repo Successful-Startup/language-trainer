@@ -14,7 +14,7 @@ omit =
 exclude_lines =
     a^
 # The gate only moves up. Each stage sets it to the value it reached.
-fail_under = 65.64
+fail_under = 69.27
 precision = 2
 show_missing = True
 skip_covered = True
