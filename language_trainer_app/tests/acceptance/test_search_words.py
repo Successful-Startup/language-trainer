@@ -1,10 +1,12 @@
 """Acceptance tests for the flow: a teacher searches words and word forms.
 
 The same tests run on SQLite and on PostgreSQL. SQLite LIKE ignores case only
-for ASCII, so partial search with Cyrillic in a different case is not tested.
+for ASCII, so partial search with Cyrillic in a different case is tested on
+PostgreSQL only, the database of production.
 """
 
 import pytest
+from django.db import connection
 
 from language_trainer_app.models.word import Word
 from language_trainer_app.models.word_form import WordForm
@@ -383,3 +385,18 @@ class TestWordFormExactSearch:
         assert sorted(found) == sorted(
             ids(name_and_noun["name_form"], name_and_noun["noun_form"])
         )
+
+
+@pytest.mark.skipif(
+    connection.vendor != "postgresql",
+    reason="SQLite LIKE ignores case only for ASCII letters.",
+)
+def test_partial_search_ignores_cyrillic_case_on_postgresql(api_client, reference_data):
+    house = make_word(reference_data, "дом")
+    form = make_form(reference_data, house, "дом")
+
+    words = api_client.get(WORDS_URL, {"search": "ДОМ"})
+    forms = api_client.get(WORD_FORMS_URL, {"search": "ДОМ"})
+
+    assert [row["id"] for row in words.data["results"]] == [house.id]
+    assert [row["id"] for row in forms.data["results"]] == [form.id]
