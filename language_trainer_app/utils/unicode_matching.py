@@ -12,8 +12,6 @@ def _filter_queryset_casefold_exact_python(queryset, field_name, search_term):
     casefold_ids = []
 
     for object_id, field_value in queryset.values_list("id", field_name):
-        if not isinstance(field_value, str):
-            continue
         if field_value == search_term:
             exact_ids.append(object_id)
             continue
