@@ -68,8 +68,6 @@ def _resolve_animacy(animacy_name):
     if not animacy_name:
         return None
     key = animacy_name.strip().casefold()
-    if not key:
-        return None
     if key not in _ANIMACY_NAME_TO_VALUE:
         raise ValueError(
             "Invalid animacy_name: expected 'Одушевлённое' or 'Неодушевлённое'."
