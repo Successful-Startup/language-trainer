@@ -11,7 +11,7 @@ omit =
 
 [report]
 # The gate only moves up. Each stage sets it to the value it reached.
-fail_under = 64.13
+fail_under = 64.37
 precision = 2
 show_missing = True
 skip_covered = True
