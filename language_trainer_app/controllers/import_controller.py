@@ -67,7 +67,7 @@ def _resolve_animacy(animacy_name):
     """Map an animacy column value to a Word.animacy choice or None."""
     if not animacy_name:
         return None
-    key = animacy_name.strip().casefold()
+    key = animacy_name.casefold()
     if key not in _ANIMACY_NAME_TO_VALUE:
         raise ValueError(
             "Invalid animacy_name: expected 'Одушевлённое' or 'Неодушевлённое'."
