@@ -4,6 +4,7 @@ Shared fixtures and helpers for language_trainer_app tests.
 
 import pytest
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
@@ -33,6 +34,12 @@ def make_csv_file(content: str, filename: str = "test.csv") -> SimpleUploadedFil
 # ---------------------------------------------------------------------------
 
 
+@pytest.fixture(autouse=True)
+def reset_request_throttles():
+    """The rate limits count requests in the cache, which outlives a single test."""
+    cache.clear()
+
+
 @pytest.fixture
 def api_client():
     return APIClient()
@@ -45,7 +52,14 @@ def teacher_user(db):
 
 @pytest.fixture
 def auth_client(api_client, teacher_user):
-    api_client.force_authenticate(user=teacher_user)
+    """Log in with a password and send the JWT, as the frontend does."""
+    response = api_client.post(
+        "/auth/login/",
+        {"username": "teacher", "password": "pass1234"},
+        format="json",
+    )
+    assert response.status_code == 200
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
     return api_client
 
 

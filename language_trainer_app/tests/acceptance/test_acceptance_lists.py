@@ -5,7 +5,6 @@ a password and sends the JWT, as the frontend does.
 """
 
 import pytest
-from rest_framework.test import APIClient
 
 from language_trainer_app.models.context import Context
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
@@ -61,46 +60,33 @@ def make_pairs(reference_data, count):
     )
 
 
-@pytest.fixture
-def teacher_client(teacher_user):
-    client = APIClient()
-    response = client.post(
-        "/auth/login/",
-        {"username": "teacher", "password": "pass1234"},
-        format="json",
-    )
-    assert response.status_code == 200
-    client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
-    return client
-
-
 class TestContextsList:
-    def test_teacher_sees_every_imported_context(self, teacher_client):
+    def test_teacher_sees_every_imported_context(self, auth_client):
         texts = context_texts(ROWS_ABOVE_PAGE_SIZE)
-        import_contexts(teacher_client, texts)
+        import_contexts(auth_client, texts)
 
-        response = teacher_client.get(CONTEXTS_URL)
+        response = auth_client.get(CONTEXTS_URL)
 
         assert response.status_code == 200
         assert isinstance(response.data, list)
         assert [context["text"] for context in response.data] == sorted(texts)
 
-    def test_list_follows_create_and_delete_above_page_size(self, teacher_client):
-        import_contexts(teacher_client, context_texts(ROWS_ABOVE_PAGE_SIZE))
+    def test_list_follows_create_and_delete_above_page_size(self, auth_client):
+        import_contexts(auth_client, context_texts(ROWS_ABOVE_PAGE_SIZE))
         # This text sorts after all imported contexts.
         new_text = "Яблоко лежит на ____"
 
-        created = teacher_client.post(CONTEXTS_URL, {"text": new_text}, format="json")
+        created = auth_client.post(CONTEXTS_URL, {"text": new_text}, format="json")
         assert created.status_code == 201
 
-        after_create = teacher_client.get(CONTEXTS_URL)
+        after_create = auth_client.get(CONTEXTS_URL)
         assert len(after_create.data) == ROWS_ABOVE_PAGE_SIZE + 1
         assert after_create.data[-1] == {"id": created.data["id"], "text": new_text}
 
-        deleted = teacher_client.delete(f"{CONTEXTS_URL}{created.data['id']}/")
+        deleted = auth_client.delete(f"{CONTEXTS_URL}{created.data['id']}/")
         assert deleted.status_code == 204
 
-        after_delete = teacher_client.get(CONTEXTS_URL)
+        after_delete = auth_client.get(CONTEXTS_URL)
         assert len(after_delete.data) == ROWS_ABOVE_PAGE_SIZE
         assert new_text not in [context["text"] for context in after_delete.data]
 
@@ -122,13 +108,13 @@ class TestContextsList:
 
 class TestPairsList:
     def test_teacher_creates_pair_for_context_above_page_size(
-        self, teacher_client, reference_data
+        self, auth_client, reference_data
     ):
-        import_contexts(teacher_client, context_texts(ROWS_ABOVE_PAGE_SIZE))
+        import_contexts(auth_client, context_texts(ROWS_ABOVE_PAGE_SIZE))
         noun_form = make_noun_form(reference_data)
-        last_context = teacher_client.get(CONTEXTS_URL).data[-1]
+        last_context = auth_client.get(CONTEXTS_URL).data[-1]
 
-        created = teacher_client.post(
+        created = auth_client.post(
             PAIRS_URL,
             {
                 "context_id": last_context["id"],
@@ -139,7 +125,7 @@ class TestPairsList:
         )
         assert created.status_code == 201
 
-        response = teacher_client.get(PAIRS_URL)
+        response = auth_client.get(PAIRS_URL)
         assert response.status_code == 200
         assert isinstance(response.data, list)
         assert len(response.data) == 1
@@ -147,10 +133,10 @@ class TestPairsList:
         assert response.data[0]["context"] == last_context
         assert response.data[0]["noun_form"]["id"] == noun_form.id
 
-    def test_teacher_sees_every_pair(self, teacher_client, reference_data):
+    def test_teacher_sees_every_pair(self, auth_client, reference_data):
         pairs = make_pairs(reference_data, DEFAULT_PAGE_SIZE + 1)
 
-        response = teacher_client.get(PAIRS_URL)
+        response = auth_client.get(PAIRS_URL)
 
         assert response.status_code == 200
         assert isinstance(response.data, list)
