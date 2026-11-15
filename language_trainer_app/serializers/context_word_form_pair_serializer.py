@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from language_trainer_app.models.context import Context
 from language_trainer_app.models.context_word_form_pair import ContextWordFormPair
@@ -43,3 +44,12 @@ class ContextWordFormPairSerializer(serializers.ModelSerializer):
             "adjective_form_id",
         ]
         read_only_fields = ["id"]
+        # DRF skips the model's two partial unique constraints, because their
+        # condition is on a foreign key. One check with NULL equal to NULL covers both.
+        validators = [
+            UniqueTogetherValidator(
+                queryset=ContextWordFormPair.objects.all(),
+                fields=["context_id", "adjective_form_id", "noun_form_id"],
+                nulls_distinct=False,
+            )
+        ]

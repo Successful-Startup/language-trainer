@@ -24,6 +24,22 @@ WORD_FORMS_URL = "/word-forms/"
 CONTEXTS_URL = "/contexts/"
 PAIRS_URL = "/context-word-form-pairs/"
 
+WORD_NOT_UNIQUE = {
+    "non_field_errors": [
+        "The fields base_form, part_of_speech, gender must make a unique set."
+    ]
+}
+WORD_FORM_NOT_UNIQUE = {
+    "non_field_errors": [
+        "The fields word_id, case, gender, number must make a unique set."
+    ]
+}
+PAIR_NOT_UNIQUE = {
+    "non_field_errors": [
+        "The fields context_id, adjective_form_id, noun_form_id must make a unique set."
+    ]
+}
+
 
 def invalid_pk(pk=UNKNOWN_ID):
     return [f'Invalid pk "{pk}" - object does not exist.']
@@ -442,6 +458,63 @@ class TestWords:
         assert not ContextWordFormPair.objects.exists()
         assert Context.objects.filter(id=v["context"].id).exists()
 
+    def test_duplicate_word_is_rejected(self, auth_client, vocabulary):
+        v = vocabulary
+
+        response = auth_client.post(
+            WORDS_URL,
+            {
+                "base_form": "дом",
+                "part_of_speech": v["pos_noun"].id,
+                "gender": v["gender_m"].id,
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == WORD_NOT_UNIQUE
+        assert Word.objects.filter(base_form="дом").count() == 1
+
+    def test_duplicate_word_without_gender_is_rejected(self, auth_client, vocabulary):
+        response = auth_client.post(
+            WORDS_URL,
+            {"base_form": "синий", "part_of_speech": vocabulary["pos_adj"].id},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == WORD_NOT_UNIQUE
+        assert Word.objects.filter(base_form="синий").count() == 1
+
+    def test_same_base_form_with_another_gender_is_a_new_word(
+        self, auth_client, vocabulary
+    ):
+        v = vocabulary
+
+        response = auth_client.post(
+            WORDS_URL,
+            {"base_form": "дом", "part_of_speech": v["pos_noun"].id, "gender": None},
+            format="json",
+        )
+
+        assert response.status_code == 201
+        assert Word.objects.filter(base_form="дом").count() == 2
+
+    def test_rename_into_an_existing_word_is_rejected(self, auth_client, vocabulary):
+        v = vocabulary
+        Word.objects.create(
+            base_form="кот", part_of_speech=v["pos_noun"], gender=v["gender_m"]
+        )
+
+        response = auth_client.patch(
+            detail_url(WORDS_URL, v["noun"].id), {"base_form": "кот"}, format="json"
+        )
+
+        assert response.status_code == 400
+        assert response.json() == WORD_NOT_UNIQUE
+        v["noun"].refresh_from_db()
+        assert v["noun"].base_form == "дом"
+
     def test_unknown_animacy_is_rejected(self, auth_client, reference_data):
         response = auth_client.post(
             WORDS_URL,
@@ -609,6 +682,43 @@ class TestWordForms:
         pair.refresh_from_db()
         assert pair.adjective_form is None
         assert auth_client.get(detail_url(PAIRS_URL, pair.id)).json() == pair_body(pair)
+
+    def test_duplicate_form_is_rejected(self, auth_client, vocabulary):
+        v = vocabulary
+
+        response = auth_client.post(
+            WORD_FORMS_URL,
+            {
+                "word_id": v["adjective"].id,
+                "case": v["case_gen"].id,
+                "gender": v["gender_m"].id,
+                "number": v["number_sg"].id,
+                "word_form": "синего",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == WORD_FORM_NOT_UNIQUE
+        assert WordForm.objects.filter(word=v["adjective"]).count() == 1
+
+    def test_duplicate_form_without_gender_is_rejected(self, auth_client, vocabulary):
+        v = vocabulary
+
+        response = auth_client.post(
+            WORD_FORMS_URL,
+            {
+                "word_id": v["noun"].id,
+                "case": v["case_gen"].id,
+                "number": v["number_sg"].id,
+                "word_form": "дома",
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == WORD_FORM_NOT_UNIQUE
+        assert WordForm.objects.filter(word=v["noun"]).count() == 1
 
     def test_required_fields(self, auth_client, db):
         response = auth_client.post(WORD_FORMS_URL, {}, format="json")
@@ -850,6 +960,89 @@ class TestPairs:
         assert not ContextWordFormPair.objects.exists()
         assert Context.objects.filter(id=v["context"].id).exists()
         assert WordForm.objects.filter(id=v["noun_form"].id).exists()
+
+    def test_duplicate_pair_is_rejected(self, auth_client, vocabulary):
+        v = vocabulary
+        ContextWordFormPair.objects.create(
+            context=v["context"],
+            noun_form=v["noun_form"],
+            adjective_form=v["adjective_form"],
+        )
+
+        response = auth_client.post(
+            PAIRS_URL,
+            {
+                "context_id": v["context"].id,
+                "noun_form_id": v["noun_form"].id,
+                "adjective_form_id": v["adjective_form"].id,
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == PAIR_NOT_UNIQUE
+        assert ContextWordFormPair.objects.count() == 1
+
+    def test_duplicate_noun_only_pair_is_rejected(self, auth_client, vocabulary):
+        v = vocabulary
+        ContextWordFormPair.objects.create(
+            context=v["context"], noun_form=v["noun_form"]
+        )
+
+        response = auth_client.post(
+            PAIRS_URL,
+            {
+                "context_id": v["context"].id,
+                "noun_form_id": v["noun_form"].id,
+                "adjective_form_id": None,
+            },
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == PAIR_NOT_UNIQUE
+        assert ContextWordFormPair.objects.count() == 1
+
+    def test_same_noun_with_and_without_an_adjective_are_two_pairs(
+        self, auth_client, vocabulary
+    ):
+        v = vocabulary
+        ContextWordFormPair.objects.create(
+            context=v["context"],
+            noun_form=v["noun_form"],
+            adjective_form=v["adjective_form"],
+        )
+
+        response = auth_client.post(
+            PAIRS_URL,
+            {"context_id": v["context"].id, "noun_form_id": v["noun_form"].id},
+            format="json",
+        )
+
+        assert response.status_code == 201
+        assert ContextWordFormPair.objects.count() == 2
+
+    def test_dropping_the_adjective_into_an_existing_pair_is_rejected(
+        self, auth_client, vocabulary
+    ):
+        v = vocabulary
+        ContextWordFormPair.objects.create(
+            context=v["context"], noun_form=v["noun_form"]
+        )
+        pair = ContextWordFormPair.objects.create(
+            context=v["context"],
+            noun_form=v["noun_form"],
+            adjective_form=v["adjective_form"],
+        )
+
+        response = auth_client.patch(
+            detail_url(PAIRS_URL, pair.id), {"adjective_form_id": None}, format="json"
+        )
+
+        assert response.status_code == 400
+        assert response.json() == PAIR_NOT_UNIQUE
+        pair.refresh_from_db()
+        assert pair.adjective_form == v["adjective_form"]
 
     def test_create_needs_every_id_field(self, auth_client, db):
         response = auth_client.post(PAIRS_URL, {}, format="json")
