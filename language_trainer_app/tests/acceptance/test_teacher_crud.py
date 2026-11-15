@@ -805,6 +805,18 @@ class TestContexts:
         context.refresh_from_db()
         assert context.text == "около ____"
 
+    def test_teacher_changes_the_text(self, auth_client, vocabulary):
+        context = vocabulary["context"]
+
+        response = auth_client.patch(
+            detail_url(CONTEXTS_URL, context.id), {"text": "для ____"}, format="json"
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"id": context.id, "text": "для ____"}
+        context.refresh_from_db()
+        assert context.text == "для ____"
+
     def test_deleting_a_context_deletes_its_pairs(self, auth_client, vocabulary):
         v = vocabulary
         ContextWordFormPair.objects.create(
