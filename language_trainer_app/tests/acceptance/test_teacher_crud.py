@@ -720,6 +720,25 @@ class TestWordForms:
         assert response.json() == WORD_FORM_NOT_UNIQUE
         assert WordForm.objects.filter(word=v["noun"]).count() == 1
 
+    def test_changing_the_case_into_an_existing_form_is_rejected(
+        self, auth_client, vocabulary
+    ):
+        v = vocabulary
+        form = WordForm.objects.create(
+            word=v["noun"], case=v["case_dat"], number=v["number_sg"], word_form="дому"
+        )
+
+        response = auth_client.patch(
+            detail_url(WORD_FORMS_URL, form.id),
+            {"case": v["case_gen"].id},
+            format="json",
+        )
+
+        assert response.status_code == 400
+        assert response.json() == WORD_FORM_NOT_UNIQUE
+        form.refresh_from_db()
+        assert (form.case, form.word_form) == (v["case_dat"], "дому")
+
     def test_required_fields(self, auth_client, db):
         response = auth_client.post(WORD_FORMS_URL, {}, format="json")
 
