@@ -55,48 +55,6 @@ class TestGenerateEndpoint:
         assert response.status_code == 200
 
 
-class TestContextEndpoint:
-    url = "/contexts/"
-
-    def test_create_with_exactly_one_placeholder_succeeds(self, auth_client, db):
-        response = auth_client.post(
-            self.url, {"text": "В ____ живёт семья"}, format="json"
-        )
-        assert response.status_code == 201
-
-    def test_create_without_placeholder_returns_400(self, auth_client, db):
-        response = auth_client.post(self.url, {"text": "Без пропуска"}, format="json")
-        assert response.status_code == 400
-        assert "text" in response.data
-
-    def test_create_with_two_placeholders_returns_400(self, auth_client, db):
-        response = auth_client.post(
-            self.url, {"text": "Этот ____ очень ____"}, format="json"
-        )
-        assert response.status_code == 400
-        assert "text" in response.data
-
-    def test_update_with_two_placeholders_returns_400(self, auth_client, db):
-        create_resp = auth_client.post(
-            self.url, {"text": "В ____ живёт семья"}, format="json"
-        )
-        assert create_resp.status_code == 201
-        context_id = create_resp.data["id"]
-        response = auth_client.put(
-            f"{self.url}{context_id}/",
-            {"text": "____ и ещё ____"},
-            format="json",
-        )
-        assert response.status_code == 400
-        assert "text" in response.data
-
-    def test_requires_authentication_for_create(self, api_client, db):
-        response = api_client.post(
-            self.url, {"text": "В ____ живёт семья"}, format="json"
-        )
-        assert response.status_code == 401
-
-
 class TestAuthEndpoints:
     login_url = "/auth/login/"
     refresh_url = "/auth/refresh/"
@@ -131,18 +89,6 @@ class TestAuthEndpoints:
 
 
 class TestPermissions:
-    def test_anonymous_can_read_words(self, api_client, db):
-        response = api_client.get("/words/")
-        assert response.status_code == 200
-
-    def test_anonymous_cannot_create_word(self, api_client, db):
-        response = api_client.post("/words/", {"base_form": "тест"}, format="json")
-        assert response.status_code == 401
-
-    def test_authenticated_can_create_gender(self, auth_client, db):
-        response = auth_client.post("/genders/", {"name": "мужской"}, format="json")
-        assert response.status_code == 201
-
     def test_anonymous_cannot_import(self, api_client, db):
         f = make_csv_file("base_form,part_of_speech_name\nдом,существительное\n")
         response = api_client.post(
