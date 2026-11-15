@@ -1088,6 +1088,28 @@ class TestPairs:
             v["adjective_form"],
         )
 
+    def test_replace_without_the_adjective_field_drops_it(
+        self, auth_client, vocabulary
+    ):
+        v = vocabulary
+        pair = ContextWordFormPair.objects.create(
+            context=v["context"],
+            noun_form=v["noun_form"],
+            adjective_form=v["adjective_form"],
+        )
+
+        response = auth_client.put(
+            detail_url(PAIRS_URL, pair.id),
+            {"context_id": v["context"].id, "noun_form_id": v["noun_form"].id},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        pair.refresh_from_db()
+        assert pair.adjective_form is None
+        assert response.json() == pair_body(pair)
+        assert response.json()["adjective_form"] is None
+
     @pytest.mark.parametrize(
         "field", ["context_id", "noun_form_id", "adjective_form_id"]
     )
