@@ -857,6 +857,44 @@ class TestPairs:
         assert response.status_code == 400
         assert response.json() == {"context_id": REQUIRED, "noun_form_id": REQUIRED}
 
+    def test_adjective_field_can_be_left_out(self, auth_client, vocabulary):
+        v = vocabulary
+
+        response = auth_client.post(
+            PAIRS_URL,
+            {"context_id": v["context"].id, "noun_form_id": v["noun_form"].id},
+            format="json",
+        )
+
+        assert response.status_code == 201
+        pair = ContextWordFormPair.objects.get()
+        assert response.json() == pair_body(pair)
+        assert pair.adjective_form is None
+
+    def test_change_without_the_adjective_field_keeps_the_adjective(
+        self, auth_client, vocabulary
+    ):
+        v = vocabulary
+        pair = ContextWordFormPair.objects.create(
+            context=v["context"],
+            noun_form=v["noun_form"],
+            adjective_form=v["adjective_form"],
+        )
+        other_context = Context.objects.create(text="около ____")
+
+        response = auth_client.patch(
+            detail_url(PAIRS_URL, pair.id),
+            {"context_id": other_context.id},
+            format="json",
+        )
+
+        assert response.status_code == 200
+        pair.refresh_from_db()
+        assert (pair.context, pair.adjective_form) == (
+            other_context,
+            v["adjective_form"],
+        )
+
     @pytest.mark.parametrize(
         "field", ["context_id", "noun_form_id", "adjective_form_id"]
     )

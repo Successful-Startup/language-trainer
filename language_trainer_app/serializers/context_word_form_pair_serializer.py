@@ -26,7 +26,8 @@ class ContextWordFormPairSerializer(serializers.ModelSerializer):
         queryset=WordForm.objects.all(),
         source="adjective_form",
         write_only=True,
-        required=False,
+        # The unique-together check treats a field without a default as required.
+        default=None,
         allow_null=True,
     )
 
