@@ -486,9 +486,7 @@ class TestWords:
         assert response.json() == WORD_NOT_UNIQUE
         assert Word.objects.filter(base_form="синий").count() == 1
 
-    def test_same_base_form_with_another_gender_is_a_new_word(
-        self, auth_client, vocabulary
-    ):
+    def test_same_base_form_without_gender_is_a_new_word(self, auth_client, vocabulary):
         v = vocabulary
 
         response = auth_client.post(
@@ -535,6 +533,7 @@ class TestWords:
 
         assert response.status_code == 400
         assert response.json() == {"base_form": REQUIRED, "part_of_speech": REQUIRED}
+        assert not Word.objects.exists()
 
     def test_unknown_part_of_speech_is_rejected(self, auth_client, db):
         response = auth_client.post(
@@ -545,6 +544,7 @@ class TestWords:
 
         assert response.status_code == 400
         assert response.json() == {"part_of_speech": invalid_pk()}
+        assert not Word.objects.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -749,6 +749,7 @@ class TestWordForms:
             "number": REQUIRED,
             "word_form": REQUIRED,
         }
+        assert not WordForm.objects.exists()
 
     def test_unknown_word_is_rejected(self, auth_client, vocabulary):
         v = vocabulary
@@ -766,6 +767,7 @@ class TestWordForms:
 
         assert response.status_code == 400
         assert response.json() == {"word_id": invalid_pk()}
+        assert WordForm.objects.count() == 2
 
 
 # ---------------------------------------------------------------------------
@@ -834,8 +836,19 @@ class TestContexts:
         assert response.json() == {"text": [error]}
         assert not Context.objects.exists()
 
-    @pytest.mark.parametrize("text", ["без пропуска", "____ и ещё ____"])
-    def test_update_keeps_the_placeholder_rule(self, auth_client, vocabulary, text):
+    @pytest.mark.parametrize(
+        "text, error",
+        [
+            ("без пропуска", "Context must contain '____' as the blank placeholder."),
+            (
+                "____ и ещё ____",
+                "Context must contain exactly one '____' placeholder, found more than one.",
+            ),
+        ],
+    )
+    def test_update_keeps_the_placeholder_rule(
+        self, auth_client, vocabulary, text, error
+    ):
         context = vocabulary["context"]
 
         response = auth_client.put(
@@ -843,7 +856,7 @@ class TestContexts:
         )
 
         assert response.status_code == 400
-        assert list(response.json()) == ["text"]
+        assert response.json() == {"text": [error]}
         context.refresh_from_db()
         assert context.text == "у ____"
 
@@ -859,6 +872,7 @@ class TestContexts:
 
         assert response.status_code == 400
         assert response.json() == {"text": REQUIRED}
+        assert not Context.objects.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -1068,6 +1082,7 @@ class TestPairs:
 
         assert response.status_code == 400
         assert response.json() == {"context_id": REQUIRED, "noun_form_id": REQUIRED}
+        assert not ContextWordFormPair.objects.exists()
 
     def test_adjective_field_can_be_left_out(self, auth_client, vocabulary):
         v = vocabulary
