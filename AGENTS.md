@@ -230,6 +230,8 @@ Phrase ──▶ Word (M2M: valid_words)
 - `adjective_form` → FK to `WordForm` (nullable)
 - Unique constraint: `(context, adjective_form, noun_form)`
 
+**Known DRF workaround:** the `Word`, `WordForm` and `ContextWordFormPair` serializers declare an explicit `UniqueTogetherValidator(..., nulls_distinct=False)`. DRF 3.18.3 skips the check for these partial unique constraints on nullable foreign keys, so a duplicate got HTTP 500. Remove the explicit validators when DRF fixes this.
+
 **`Phrase`** — a phrase with a set of valid words (currently not exposed via API)
 - `phrase_start` (CharField)
 - `valid_words` → M2M to `Word`
