@@ -94,6 +94,7 @@ def rows(db):
     adjective = PartOfSpeech.objects.get(name="Прилагательное")
     nominative = Case.objects.get(name="Именительный")
     genitive = Case.objects.get(name="Родительный")
+    dative = Case.objects.get(name="Дательный")
     singular = WordNumber.objects.get(name="Единственное")
     plural = WordNumber.objects.get(name="Множественное")
     house = Word.objects.create(
@@ -115,13 +116,14 @@ def rows(db):
     cats = WordForm.objects.create(
         word=cat, case=nominative, number=plural, word_form="кошки"
     )
-    big_genitive = WordForm.objects.create(
-        word=big, case=genitive, gender=masculine, number=singular, word_form="большого"
+    # Not in the case of the noun, so a pair filter on the wrong form shows up.
+    big_dative = WordForm.objects.create(
+        word=big, case=dative, gender=masculine, number=singular, word_form="большому"
     )
     near = Context.objects.create(text="у ____")
     see = Context.objects.create(text="я вижу ____")
     pair_with_adjective = ContextWordFormPair.objects.create(
-        context=near, noun_form=house_genitive, adjective_form=big_genitive
+        context=near, noun_form=house_genitive, adjective_form=big_dative
     )
     noun_only_pair = ContextWordFormPair.objects.create(context=see, noun_form=cats)
     on_table = Phrase.objects.create(phrase_start="на столе")
@@ -134,6 +136,7 @@ def rows(db):
         "adjective": adjective,
         "nominative": nominative,
         "genitive": genitive,
+        "dative": dative,
         "singular": singular,
         "plural": plural,
         "house": house,
@@ -141,7 +144,7 @@ def rows(db):
         "big": big,
         "house_genitive": house_genitive,
         "cats": cats,
-        "big_genitive": big_genitive,
+        "big_dative": big_dative,
         "near": near,
         "see": see,
         "pair_with_adjective": pair_with_adjective,
@@ -243,7 +246,7 @@ SEARCHES = {
     "word number": (WordNumber, "Множ", "plural", "singular"),
     "word": (Word, "ошк", "cat", "house"),
     "word form by its text": (WordForm, "ома", "house_genitive", "cats"),
-    "word form by its base form": (WordForm, "шой", "big_genitive", "cats"),
+    "word form by its base form": (WordForm, "шой", "big_dative", "cats"),
     "context": (Context, "вижу", "see", "near"),
     "pair by its context": (
         ContextWordFormPair,
@@ -363,7 +366,11 @@ def test_the_pair_list_filters_by_the_noun_form(developer_client, rows):
     assert set(filters) == {"case", "gender", "number"}
     assert {"Именительный", "Родительный"} <= set(filters["case"])
     assert {"Единственное", "Множественное"} <= set(filters["number"])
+    for title, choices in filters.items():
+        links = [link for label, link in choices.items() if label != "All"]
+        assert all(link.startswith(f"?noun_form__{title}__") for link in links)
 
+    # The noun form of the pair is in the genitive, its adjective form is not.
     genitive = developer_client.get(
         list_url(ContextWordFormPair) + filters["case"]["Родительный"]
     )
@@ -380,9 +387,9 @@ TITLES = {
     "part of speech": ("noun", "Существительное"),
     "word number": ("plural", "Множественное"),
     "word": ("cat", "кошка"),
-    "word form": ("big_genitive", "большого"),
+    "word form": ("big_dative", "большому"),
     "context": ("see", "я вижу ____"),
-    "pair with an adjective": ("pair_with_adjective", "у ____: большого дома"),
+    "pair with an adjective": ("pair_with_adjective", "у ____: большому дома"),
     "pair without an adjective": ("noun_only_pair", "я вижу ____: кошки"),
     "phrase": ("on_table", "на столе"),
 }
@@ -424,7 +431,7 @@ def test_the_pair_page_asks_for_the_ids_of_the_context_and_the_forms(
 
     assert raw_id_field("context", pair.context, "у ____").search(html)
     assert raw_id_field("noun_form", pair.noun_form, "дома").search(html)
-    assert raw_id_field("adjective_form", pair.adjective_form, "большого").search(html)
+    assert raw_id_field("adjective_form", pair.adjective_form, "большому").search(html)
 
 
 def test_the_phrase_page_picks_valid_words_in_two_boxes(developer_client, rows):
