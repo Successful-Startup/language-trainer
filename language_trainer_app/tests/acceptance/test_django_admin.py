@@ -10,6 +10,7 @@ import re
 from html import unescape
 
 import pytest
+from django.contrib import admin
 from django.contrib.auth.models import User
 
 from language_trainer_app.models.case import Case
@@ -191,6 +192,20 @@ def pair_row(pair):
 # ---------------------------------------------------------------------------
 
 
+# The title of each model on the admin index page.
+ADMIN_TITLES = {
+    Case: "Падежи",
+    Context: "Контексты",
+    ContextWordFormPair: "Пары контекст-форма",
+    Gender: "Роды",
+    PartOfSpeech: "Части речи",
+    Phrase: "Phrases",
+    Word: "Слова",
+    WordForm: "Формы слов",
+    WordNumber: "Числа",
+}
+
+
 def test_a_superuser_logs_in_through_the_form_and_sees_every_model(client, superuser):
     response = client.post(
         f"{LOGIN_URL}?next={ADMIN_URL}",
@@ -200,18 +215,19 @@ def test_a_superuser_logs_in_through_the_form_and_sees_every_model(client, super
 
     assert response.redirect_chain == [(ADMIN_URL, 302)]
     html = response.content.decode()
-    for model, title in [
-        (Case, "Падежи"),
-        (Context, "Контексты"),
-        (ContextWordFormPair, "Пары контекст-форма"),
-        (Gender, "Роды"),
-        (PartOfSpeech, "Части речи"),
-        (Phrase, "Phrases"),
-        (Word, "Слова"),
-        (WordForm, "Формы слов"),
-        (WordNumber, "Числа"),
-    ]:
+    for model, title in ADMIN_TITLES.items():
         assert f'<a href="{list_url(model)}">{title}</a>' in html
+
+
+def test_the_tests_cover_every_model_in_the_admin():
+    registered = {
+        model
+        for model in admin.site._registry
+        if model._meta.app_label == "language_trainer_app"
+    }
+
+    assert registered == set(ADMIN_TITLES)
+    assert registered == {model for model, *_ in SEARCHES.values()}
 
 
 # ---------------------------------------------------------------------------
