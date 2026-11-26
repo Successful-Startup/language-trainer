@@ -234,14 +234,16 @@ def test_the_tests_cover_every_model_in_the_admin():
 # List pages and search
 # ---------------------------------------------------------------------------
 
+# The terms for words and word forms come from the middle or the end of the
+# text, so a search that matches only the start would not find them.
 SEARCHES = {
     "case": (Case, "Роди", "genitive", "nominative"),
     "gender": (Gender, "Муж", "masculine", "feminine"),
     "part of speech": (PartOfSpeech, "Прилаг", "adjective", "noun"),
     "word number": (WordNumber, "Множ", "plural", "singular"),
-    "word": (Word, "кош", "cat", "house"),
-    "word form by its text": (WordForm, "дома", "house_genitive", "cats"),
-    "word form by its base form": (WordForm, "большой", "big_genitive", "cats"),
+    "word": (Word, "ошк", "cat", "house"),
+    "word form by its text": (WordForm, "ома", "house_genitive", "cats"),
+    "word form by its base form": (WordForm, "шой", "big_genitive", "cats"),
     "context": (Context, "вижу", "see", "near"),
     "pair by its context": (
         ContextWordFormPair,
@@ -297,8 +299,8 @@ RESULT_COUNTS = {
     "context": (Context, "вижу", True),
     "pair": (ContextWordFormPair, "вижу", True),
     "phrase": (Phrase, "стол", True),
-    "word": (Word, "кош", False),
-    "word form": (WordForm, "дома", False),
+    "word": (Word, "ошк", False),
+    "word form": (WordForm, "ома", False),
 }
 
 
