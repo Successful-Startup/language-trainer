@@ -290,24 +290,26 @@ def test_the_search_on_a_list_page_finds_only_the_matching_row(
 
 # Counting all rows of the big tables is slow, so their pages do not do it.
 RESULT_COUNTS = {
-    "case": (Case, "Роди", "6 total"),
-    "gender": (Gender, "Муж", "3 total"),
-    "part of speech": (PartOfSpeech, "Прилаг", "2 total"),
-    "word number": (WordNumber, "Множ", "2 total"),
-    "context": (Context, "вижу", "2 total"),
-    "pair": (ContextWordFormPair, "вижу", "2 total"),
-    "phrase": (Phrase, "стол", "2 total"),
-    "word": (Word, "кош", "Show all"),
-    "word form": (WordForm, "дома", "Show all"),
+    "case": (Case, "Роди", True),
+    "gender": (Gender, "Муж", True),
+    "part of speech": (PartOfSpeech, "Прилаг", True),
+    "word number": (WordNumber, "Множ", True),
+    "context": (Context, "вижу", True),
+    "pair": (ContextWordFormPair, "вижу", True),
+    "phrase": (Phrase, "стол", True),
+    "word": (Word, "кош", False),
+    "word form": (WordForm, "дома", False),
 }
 
 
 @pytest.mark.parametrize(
-    "model, term, all_rows", RESULT_COUNTS.values(), ids=RESULT_COUNTS.keys()
+    "model, term, counts_all", RESULT_COUNTS.values(), ids=RESULT_COUNTS.keys()
 )
 def test_a_search_counts_all_rows_only_on_small_tables(
-    developer_client, rows, model, term, all_rows
+    developer_client, rows, model, term, counts_all
 ):
+    all_rows = f"{model.objects.count()} total" if counts_all else "Show all"
+
     response = developer_client.get(list_url(model), {"q": term})
 
     assert f'1 result (<a href="?">{all_rows}</a>)' in response.content.decode()
