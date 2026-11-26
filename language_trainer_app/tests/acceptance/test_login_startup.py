@@ -154,6 +154,7 @@ class TestAnonymousLimit:
     def test_the_request_after_the_limit_gives_429_even_for_login(
         self, api_client, teacher
     ):
+        # This pins only the count. A test without a clock cannot see the period.
         for _ in range(ANON_REQUESTS_PER_MINUTE):
             assert api_client.get(GENDERS_URL).status_code == 200
 
