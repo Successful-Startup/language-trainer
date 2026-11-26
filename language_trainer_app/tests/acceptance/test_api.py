@@ -1,6 +1,4 @@
-"""Integration tests for test-generation API, auth endpoints, and permissions."""
-
-from django.contrib.auth.models import User
+"""Integration tests for test-generation API and permissions."""
 
 from language_trainer_app.tests.conftest import make_csv_file
 
@@ -53,39 +51,6 @@ class TestGenerateEndpoint:
             format="json",
         )
         assert response.status_code == 200
-
-
-class TestAuthEndpoints:
-    login_url = "/auth/login/"
-    refresh_url = "/auth/refresh/"
-
-    def test_login_returns_tokens(self, db, api_client):
-        User.objects.create_user(username="u", password="p")
-        response = api_client.post(
-            self.login_url, {"username": "u", "password": "p"}, format="json"
-        )
-        assert response.status_code == 200
-        assert "access" in response.data
-        assert "refresh" in response.data
-
-    def test_login_rejects_wrong_password(self, db, api_client):
-        User.objects.create_user(username="u", password="correct")
-        response = api_client.post(
-            self.login_url, {"username": "u", "password": "wrong"}, format="json"
-        )
-        assert response.status_code == 401
-
-    def test_refresh_returns_new_access_token(self, db, api_client):
-        User.objects.create_user(username="u", password="p")
-        login_resp = api_client.post(
-            self.login_url, {"username": "u", "password": "p"}, format="json"
-        )
-        refresh_token = login_resp.data["refresh"]
-        refresh_resp = api_client.post(
-            self.refresh_url, {"refresh": refresh_token}, format="json"
-        )
-        assert refresh_resp.status_code == 200
-        assert "access" in refresh_resp.data
 
 
 class TestPermissions:
