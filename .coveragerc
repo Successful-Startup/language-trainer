@@ -1,5 +1,7 @@
 [run]
 branch = True
+# The start tests run manage.py in a new process. This measures that process too.
+patch = subprocess
 source =
     language_trainer_app
     language_trainer_project

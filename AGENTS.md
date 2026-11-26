@@ -351,6 +351,7 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 - Only the tests in `language_trainer_app/tests/acceptance/` count for coverage. The other tests still run, but they do not count.
 - The gate is `fail_under` in `.coveragerc` (branch coverage). It only moves up: each PR sets it to the value it reached. `# pragma: no cover` is not allowed (`.coveragerc` makes it exclude nothing); code that no user flow reaches gets deleted.
 - CI (`.github/workflows/tests.yml`) runs the acceptance tests twice, on SQLite and on PostgreSQL 16, adds the two coverage results together and checks the gate.
+- Some tests start the app in a new process, because the settings read the environment only at import (for example, the start without `DJANGO_SECRET_KEY`). `patch = subprocess` in `.coveragerc` measures these processes too, and pytest-cov adds their results to the run.
 - Next step to the goal: browser E2E tests on a separate test stack.
 
 **Always follow Test-Driven Development (Red → Green → Refactor):**
