@@ -79,7 +79,7 @@ def superuser(db):
 
 
 @pytest.fixture
-def admin_client(client, superuser):
+def developer_client(client, superuser):
     client.force_login(superuser)
     return client
 
@@ -259,13 +259,13 @@ def expected_row(obj):
 
 @pytest.mark.parametrize("search", SEARCHES.values(), ids=SEARCHES.keys())
 def test_the_search_on_a_list_page_finds_only_the_matching_row(
-    admin_client, rows, search
+    developer_client, rows, search
 ):
     model, term, hit_key, miss_key = search
     hit, miss = rows[hit_key], rows[miss_key]
 
-    everything = admin_client.get(list_url(model))
-    found = admin_client.get(list_url(model), {"q": term})
+    everything = developer_client.get(list_url(model))
+    found = developer_client.get(list_url(model), {"q": term})
 
     assert expected_row(hit) in result_rows(everything)
     assert expected_row(miss) in result_rows(everything)
@@ -290,16 +290,16 @@ RESULT_COUNTS = {
     "model, term, all_rows", RESULT_COUNTS.values(), ids=RESULT_COUNTS.keys()
 )
 def test_a_search_counts_all_rows_only_on_small_tables(
-    admin_client, rows, model, term, all_rows
+    developer_client, rows, model, term, all_rows
 ):
-    response = admin_client.get(list_url(model), {"q": term})
+    response = developer_client.get(list_url(model), {"q": term})
 
     assert f'1 result (<a href="?">{all_rows}</a>)' in response.content.decode()
 
 
 @pytest.mark.parametrize("model", [Word, WordForm])
-def test_the_big_tables_search_while_the_developer_types(admin_client, model):
-    response = admin_client.get(list_url(model))
+def test_the_big_tables_search_while_the_developer_types(developer_client, model):
+    response = developer_client.get(list_url(model))
 
     assert LIVE_SEARCH_JS in response.content.decode()
 
@@ -309,38 +309,42 @@ def test_the_big_tables_search_while_the_developer_types(admin_client, model):
 # ---------------------------------------------------------------------------
 
 
-def test_the_word_list_filters_by_gender_part_of_speech_and_animacy(admin_client, rows):
-    filters = filters_of(admin_client.get(list_url(Word)))
+def test_the_word_list_filters_by_gender_part_of_speech_and_animacy(
+    developer_client, rows
+):
+    filters = filters_of(developer_client.get(list_url(Word)))
 
     assert set(filters) == {"gender", "part of speech", "animacy"}
     assert {"Мужской", "Женский"} <= set(filters["gender"])
     assert {"Существительное", "Прилагательное"} <= set(filters["part of speech"])
     assert {"Одушевлённое", "Неодушевлённое"} <= set(filters["animacy"])
 
-    animate = admin_client.get(list_url(Word) + filters["animacy"]["Одушевлённое"])
+    animate = developer_client.get(list_url(Word) + filters["animacy"]["Одушевлённое"])
     assert result_rows(animate) == [word_row(rows["cat"], "Одушевлённое")]
 
 
-def test_the_word_form_list_filters_by_case_gender_and_number(admin_client, rows):
-    filters = filters_of(admin_client.get(list_url(WordForm)))
+def test_the_word_form_list_filters_by_case_gender_and_number(developer_client, rows):
+    filters = filters_of(developer_client.get(list_url(WordForm)))
 
     assert set(filters) == {"case", "gender", "number"}
     assert {"Именительный", "Родительный"} <= set(filters["case"])
     assert {"Мужской", "Женский"} <= set(filters["gender"])
     assert {"Единственное", "Множественное"} <= set(filters["number"])
 
-    plural = admin_client.get(list_url(WordForm) + filters["number"]["Множественное"])
+    plural = developer_client.get(
+        list_url(WordForm) + filters["number"]["Множественное"]
+    )
     assert result_rows(plural) == [word_form_row(rows["cats"])]
 
 
-def test_the_pair_list_filters_by_the_noun_form(admin_client, rows):
-    filters = filters_of(admin_client.get(list_url(ContextWordFormPair)))
+def test_the_pair_list_filters_by_the_noun_form(developer_client, rows):
+    filters = filters_of(developer_client.get(list_url(ContextWordFormPair)))
 
     assert set(filters) == {"case", "gender", "number"}
     assert {"Именительный", "Родительный"} <= set(filters["case"])
     assert {"Единственное", "Множественное"} <= set(filters["number"])
 
-    genitive = admin_client.get(
+    genitive = developer_client.get(
         list_url(ContextWordFormPair) + filters["case"]["Родительный"]
     )
     assert result_rows(genitive) == [pair_row(rows["pair_with_adjective"])]
@@ -365,8 +369,8 @@ TITLES = {
 
 
 @pytest.mark.parametrize("key, title", TITLES.values(), ids=TITLES.keys())
-def test_the_change_page_names_the_row(admin_client, rows, key, title):
-    response = admin_client.get(change_url(rows[key]))
+def test_the_change_page_names_the_row(developer_client, rows, key, title):
+    response = developer_client.get(change_url(rows[key]))
 
     headings = re.findall(r"<h2>(.*?)</h2>", response.content.decode(), re.S)
     # The browser shows each run of spaces as one space.
@@ -383,28 +387,28 @@ def raw_id_field(name, obj, label):
     )
 
 
-def test_the_word_form_page_asks_for_the_word_id(admin_client, rows):
+def test_the_word_form_page_asks_for_the_word_id(developer_client, rows):
     form = rows["house_genitive"]
 
-    html = admin_client.get(change_url(form)).content.decode()
+    html = developer_client.get(change_url(form)).content.decode()
 
     assert raw_id_field("word", form.word, "дом").search(html)
 
 
 def test_the_pair_page_asks_for_the_ids_of_the_context_and_the_forms(
-    admin_client, rows
+    developer_client, rows
 ):
     pair = rows["pair_with_adjective"]
 
-    html = admin_client.get(change_url(pair)).content.decode()
+    html = developer_client.get(change_url(pair)).content.decode()
 
     assert raw_id_field("context", pair.context, "у ____").search(html)
     assert raw_id_field("noun_form", pair.noun_form, "дома").search(html)
     assert raw_id_field("adjective_form", pair.adjective_form, "большого").search(html)
 
 
-def test_the_phrase_page_picks_valid_words_in_two_boxes(admin_client, rows):
-    html = admin_client.get(change_url(rows["on_table"])).content.decode()
+def test_the_phrase_page_picks_valid_words_in_two_boxes(developer_client, rows):
+    html = developer_client.get(change_url(rows["on_table"])).content.decode()
 
     select = re.search(r'<select name="valid_words"[^>]*>(.*?)</select>', html, re.S)
     assert 'class="selectfilter"' in select.group(0)
