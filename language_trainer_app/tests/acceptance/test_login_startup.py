@@ -176,8 +176,9 @@ class TestStartup:
 
         assert result.returncode == 0, result.stderr
 
-    def test_production_start_answers_a_browser_with_json_only(self):
-        response = get_api_root_as_browser(debug="False")
+    @pytest.mark.parametrize("debug", ["False", None], ids=["debug-false", "unset"])
+    def test_production_start_answers_a_browser_with_json_only(self, debug):
+        response = get_api_root_as_browser(debug=debug)
 
         assert response == {"status": 200, "type": "application/json"}
 
