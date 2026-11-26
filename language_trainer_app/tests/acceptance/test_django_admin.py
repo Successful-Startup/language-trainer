@@ -110,6 +110,9 @@ def rows(db):
         animacy=Word.Animacy.ANIMATE,
     )
     big = Word.objects.create(base_form="большой", part_of_speech=adjective)
+    house_nominative = WordForm.objects.create(
+        word=house, case=nominative, number=singular, word_form="дом"
+    )
     house_genitive = WordForm.objects.create(
         word=house, case=genitive, number=singular, word_form="дома"
     )
@@ -142,6 +145,7 @@ def rows(db):
         "house": house,
         "cat": cat,
         "big": big,
+        "house_nominative": house_nominative,
         "house_genitive": house_genitive,
         "cats": cats,
         "big_dative": big_dative,
@@ -318,6 +322,42 @@ def test_a_search_counts_all_rows_only_on_small_tables(
     response = developer_client.get(list_url(model), {"q": term})
 
     assert f'1 result (<a href="?">{all_rows}</a>)' in response.content.decode()
+
+
+# Each column holds text in one letter case, so SQLite and PostgreSQL sort it
+# in the same order.
+SORTED_COLUMNS = {
+    "case": (Case, "name"),
+    "gender": (Gender, "name"),
+    "part of speech": (PartOfSpeech, "name"),
+    "word number": (WordNumber, "name"),
+    "word": (Word, "base_form"),
+    "context": (Context, "text"),
+}
+
+
+@pytest.mark.parametrize(
+    "model, column", SORTED_COLUMNS.values(), ids=SORTED_COLUMNS.keys()
+)
+def test_a_list_page_sorts_the_rows_by_their_text(
+    developer_client, rows, model, column
+):
+    response = developer_client.get(list_url(model))
+
+    shown = [row[column] for row in result_rows(response)]
+    assert shown == sorted(model.objects.values_list(column, flat=True))
+
+
+def test_the_word_form_list_sorts_by_word_then_by_case(developer_client, rows):
+    response = developer_client.get(list_url(WordForm))
+
+    shown = [(row["word"], row["case"]) for row in result_rows(response)]
+    assert shown == [
+        ("большой", "Дательный"),
+        ("дом", "Именительный"),
+        ("дом", "Родительный"),
+        ("кошка", "Именительный"),
+    ]
 
 
 @pytest.mark.parametrize("model", [Word, WordForm])
