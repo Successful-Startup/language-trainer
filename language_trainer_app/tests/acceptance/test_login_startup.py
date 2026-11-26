@@ -61,7 +61,8 @@ def create_gender_with(api_client, access_token, name):
 
 def start_app(*args, **env_changes):
     """Run manage.py in a new process. A None value removes the variable."""
-    env = dict(os.environ)
+    # The new process never gets the test database, so it must not reach a real one.
+    env = dict(os.environ, DB_DRIVER="django.db.backends.sqlite3", PG_DB=":memory:")
     for name, value in env_changes.items():
         if value is None:
             env.pop(name, None)
