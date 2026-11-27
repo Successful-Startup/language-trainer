@@ -343,17 +343,19 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 
 ## Testing Approach — TDD
 
-**Test goal: 100% test coverage.** The project is not there yet. Old code gets its tests in separate tasks.
+**The acceptance tests cover 100% of the backend code, and CI keeps it at 100%.** The gate is `fail_under = 100` in `.coveragerc`. It counts statements and branches.
 
-- Prefer acceptance tests that follow the real user flow: HTTP requests through the API with a real test database. Log in through `/auth/login/` and send the JWT (the `auth_client` fixture does this). Put them in `language_trainer_app/tests/acceptance/`. Example: `language_trainer_app/tests/acceptance/test_acceptance_lists.py`.
-- Every new feature and every bug fix must be fully covered with acceptance tests in the same PR.
+- Prefer acceptance tests that follow the real user flow: HTTP requests through the API with a real test database. Log in through `/auth/login/` and send the JWT (the `auth_client` fixture does this). A management command is tested through `call_command`. Put the tests in `language_trainer_app/tests/acceptance/`. Example: `language_trainer_app/tests/acceptance/test_acceptance_lists.py`.
 - Tests never run on production and never connect to the production database. Django creates a temporary test database for each run, and each test creates its own rows.
 - Only the tests in `language_trainer_app/tests/acceptance/` count for coverage. The other tests still run, but they do not count.
-- The gate is `fail_under` in `.coveragerc` (branch coverage). It only moves up: each PR sets it to the value it reached. `# pragma: no cover` is not allowed (`.coveragerc` makes it exclude nothing); code that no user flow reaches gets deleted.
 - CI (`.github/workflows/tests.yml`) runs the acceptance tests twice, on SQLite and on PostgreSQL 16, adds the two coverage results together and checks the gate.
+- What the gate means for a new change:
+  - Each new line and each new branch needs an acceptance test in the same PR. This applies to each new feature and each bug fix.
+  - Do not lower `fail_under`.
+  - `# pragma: no cover` is not allowed. `.coveragerc` makes it exclude nothing.
+  - Delete code that no user flow can reach.
 - Some tests start the app in a new process, because the settings read the environment only at import (for example, the start without `DJANGO_SECRET_KEY`). `patch = subprocess` in `.coveragerc` measures these processes too, and pytest-cov adds their results to the run. It also makes every coverage run parallel, so after a plain `coverage run -m pytest`, run `coverage combine` before `coverage report`.
 - The `seed_vocabulary` tests (`tests/acceptance/test_seed_vocabulary.py`) use the real pymorphy3 dictionary, which `requirements.txt` pins. They name the words that the dictionary gives first, so a dictionary update can change them. A run without `--limit` takes minutes, so one test gives the real analyzer a short word list. After an update of `pymorphy3-dicts-ru`, scan the whole dictionary again and check that every lemma has a parse of its own part of speech: `_get_best_parse` raises IndexError when it has none, and `django.prod.sh` (`set -e`) then stops the start of an empty database.
-- Next step to the goal: browser E2E tests on a separate test stack.
 
 **Always follow Test-Driven Development (Red → Green → Refactor):**
 
@@ -361,20 +363,33 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 2. Write the minimum code to make it pass
 3. Refactor while keeping tests green
 
-**Test runner:** Django's built-in `TestCase` + `pytest-django` (if available)
+**Test runner:** pytest with `pytest-django` (settings in `pytest.ini`). Install it with `pip install -r requirements-dev.txt`.
 
 ```bash
 pytest                                   # all tests
 pytest language_trainer_app/tests/acceptance --cov --cov-fail-under=0   # acceptance coverage, SQLite only
 ```
 
-The gate in `.coveragerc` is the CI number, the sum of both databases. The SQLite-only number is lower, because some code runs only on PostgreSQL, so without `--cov-fail-under=0` the SQLite-only run fails on the gate. To measure the sum locally, run the acceptance tests once per database with `COVERAGE_FILE=.coverage.<db>` and `--cov-fail-under=0`, then `coverage combine` and `coverage report`.
+A SQLite-only run shows less than 100%. The PostgreSQL path of `language_trainer_app/utils/unicode_matching.py` runs only on PostgreSQL. Thus a SQLite-only run needs `--cov-fail-under=0`, or it fails on the gate.
+
+To measure the sum of both databases locally, set the `PG_*` variables for a local PostgreSQL and run:
+
+```bash
+DB_DRIVER=django.db.backends.sqlite3 COVERAGE_FILE=.coverage.sqlite \
+  pytest language_trainer_app/tests/acceptance --cov --cov-report= --cov-fail-under=0
+DB_DRIVER=django.db.backends.postgresql COVERAGE_FILE=.coverage.postgresql \
+  pytest language_trainer_app/tests/acceptance --cov --cov-report= --cov-fail-under=0
+coverage combine .coverage.sqlite .coverage.postgresql
+coverage report                          # checks the gate of 100
+```
+
+Do not remove the data files with `rm .coverage*`. That pattern also removes `.coveragerc`.
 
 **What to test:**
 
 | Layer | What to test |
 |---|---|
-| Services | All business logic (e.g. `TestGeneratorService`) — unit tests with mocked DB or `TestCase` |
+| Services | All business logic (e.g. `TestGeneratorService`) — through the endpoint that uses it (`/tests/generate/`) |
 | ViewSets | API endpoints — use `APIClient` to assert status codes, response shapes, and auth rules |
 | Models | Custom `save()`, `clean()`, constraints, and any model methods |
 | Utils | CSV import logic — use in-memory CSV files |
@@ -382,4 +397,3 @@ The gate in `.coveragerc` is the CI number, the sum of both databases. The SQLit
 **Rules:**
 - Every new service method must have a test written before implementation
 - Every new API endpoint must have at least one happy-path and one error-path test
-- Do not commit code that reduces test coverage
