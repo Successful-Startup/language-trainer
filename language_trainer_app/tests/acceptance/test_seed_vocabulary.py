@@ -508,8 +508,11 @@ def test_without_the_singular_only_plural_forms_are_seeded():
 def test_without_the_feminine_gender_feminine_words_get_no_gender_and_no_forms():
     Gender.objects.filter(name=FEMININE).delete()
 
-    seed("--limit", "2")
+    out, err = seed("--limit", "2")
 
+    assert err == ""
+    # Nouns: only абажур (12). Adjectives: 2 x 18, no feminine forms.
+    assert created_form_counts(out) == [12, 36]
     assert words_of(NOUN) == {
         "аба": (None, INANIMATE),
         "абажур": (MASCULINE, INANIMATE),
