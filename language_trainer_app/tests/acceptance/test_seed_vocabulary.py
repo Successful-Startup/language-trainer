@@ -36,7 +36,7 @@ CASES = [
     "Творительный",
     "Предложный",
 ]
-PREPOSITIONAL = "Предложный"
+DATIVE = "Дательный"
 ANIMATE = "Anim"
 INANIMATE = "Inan"
 
@@ -417,8 +417,9 @@ def test_renamed_part_of_speech_is_skipped_and_the_other_is_seeded():
 
 
 @pytest.mark.django_db
-def test_without_the_prepositional_case_no_form_has_it():
-    Case.objects.filter(name=PREPOSITIONAL).delete()
+def test_without_a_middle_case_only_that_case_is_missing():
+    # The cases after the dative must still be stored.
+    Case.objects.filter(name=DATIVE).delete()
 
     out, err = seed("--limit", "2")
 
@@ -427,9 +428,9 @@ def test_without_the_prepositional_case_no_form_has_it():
     # Then the reported count is higher than the stored count.
     assert reported_form_count(out) == WordForm.objects.count()
     lampshade = noun_forms(LAMPSHADE_SINGULAR, LAMPSHADE_PLURAL)
-    assert forms_of("абажур") == without(lampshade, case=PREPOSITIONAL)
+    assert forms_of("абажур") == without(lampshade, case=DATIVE)
     assert forms_of("аахенский", ADJECTIVE) == without(
-        adjective_forms(AACHEN), case=PREPOSITIONAL
+        adjective_forms(AACHEN), case=DATIVE
     )
 
 
