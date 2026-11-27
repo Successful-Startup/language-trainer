@@ -353,6 +353,18 @@ def test_bigger_limit_adds_only_the_missing_words():
 
 
 @pytest.mark.django_db
+def test_found_words_count_all_stored_words_of_the_part_of_speech():
+    seed("--limit", "3")
+
+    out, err = seed("--limit", "2")
+
+    assert err == ""
+    assert output_lines(out).count("Found 2 lemmas.") == 2
+    assert output_lines(out).count("Created/found 3 words.") == 2
+    assert Word.objects.count() == 6
+
+
+@pytest.mark.django_db
 def test_word_that_the_teacher_added_is_kept_and_gets_no_seeded_forms():
     Word.objects.create(
         base_form="абажур",
