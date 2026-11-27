@@ -538,7 +538,7 @@ class ShortDictionaryAnalyzer(pymorphy3.MorphAnalyzer):
 
 
 @pytest.mark.django_db
-def test_run_without_limit_takes_every_word_of_the_dictionary(monkeypatch):
+def test_run_without_limit_takes_every_word_of_a_short_dictionary(monkeypatch):
     monkeypatch.setattr(pymorphy3, "MorphAnalyzer", ShortDictionaryAnalyzer)
 
     out, err = seed()
@@ -547,9 +547,9 @@ def test_run_without_limit_takes_every_word_of_the_dictionary(monkeypatch):
     lines = output_lines(out)
     assert lines.count("Found 1 lemmas.") == 1
     assert lines.count("Found 2 lemmas.") == 1
-    # The dictionary gives "вагоновожатая" (feminine) first, with the base form
-    # "вагоновожатый". No feminine parse of the base form exists, so the forms
-    # come from the masculine parse.
+    # Known wrong, kept until the user decides: "вагоновожатая" (feminine) comes
+    # first, with the base form "вагоновожатый". So the word is stored as
+    # feminine, but its forms come from the masculine parse.
     assert words_of(NOUN) == {"вагоновожатый": (FEMININE, ANIMATE)}
     assert forms_of("вагоновожатый") == noun_forms(
         [
