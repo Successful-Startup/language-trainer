@@ -352,6 +352,7 @@ Django admin is available at `http://localhost:8000/admin/`. It is a **separate 
 - The gate is `fail_under` in `.coveragerc` (branch coverage). It only moves up: each PR sets it to the value it reached. `# pragma: no cover` is not allowed (`.coveragerc` makes it exclude nothing); code that no user flow reaches gets deleted.
 - CI (`.github/workflows/tests.yml`) runs the acceptance tests twice, on SQLite and on PostgreSQL 16, adds the two coverage results together and checks the gate.
 - Some tests start the app in a new process, because the settings read the environment only at import (for example, the start without `DJANGO_SECRET_KEY`). `patch = subprocess` in `.coveragerc` measures these processes too, and pytest-cov adds their results to the run. It also makes every coverage run parallel, so after a plain `coverage run -m pytest`, run `coverage combine` before `coverage report`.
+- The `seed_vocabulary` tests (`tests/acceptance/test_seed_vocabulary.py`) use the real pymorphy3 dictionary, which `requirements.txt` pins. They name the words that the dictionary gives first, so a dictionary update can change them. A run without `--limit` takes minutes, so one test gives the real analyzer a short word list.
 - Next step to the goal: browser E2E tests on a separate test stack.
 
 **Always follow Test-Driven Development (Red → Green → Refactor):**
