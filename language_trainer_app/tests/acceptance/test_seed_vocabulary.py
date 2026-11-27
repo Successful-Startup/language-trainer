@@ -166,9 +166,9 @@ def output_lines(out):
     return [line.strip() for line in out.splitlines() if line.strip()]
 
 
-def reported_form_count(out):
-    """The sum of the "Created N word forms." lines."""
-    return sum(int(n) for n in re.findall(r"Created (\d+) word forms\.", out))
+def created_form_counts(out):
+    """N of each "Created N word forms." line."""
+    return [int(n) for n in re.findall(r"Created (\d+) word forms\.", out)]
 
 
 # ---------------------------------------------------------------------------
@@ -323,6 +323,19 @@ def test_second_run_with_100_words_runs_again_and_adds_nothing():
 
 
 @pytest.mark.django_db
+def test_rerun_reports_only_the_new_forms():
+    first_out, _ = seed("--limit", "5")
+    assert created_form_counts(first_out) == [54, 120]
+    assert WordForm.objects.count() == 174
+
+    out, err = seed("--limit", "5")
+
+    assert err == ""
+    assert created_form_counts(out) == [0, 0]
+    assert WordForm.objects.count() == 174
+
+
+@pytest.mark.django_db
 def test_bigger_limit_adds_only_the_missing_words():
     seed("--limit", "2")
     first_rows = list(Word.objects.order_by("id").values_list("id", "base_form"))
@@ -442,9 +455,6 @@ def test_without_a_middle_case_only_that_case_is_missing():
     out, err = seed("--limit", "2")
 
     assert err == ""
-    # SQLite silently drops a form without a case or number (INSERT OR IGNORE).
-    # Then the reported count is higher than the stored count.
-    assert reported_form_count(out) == WordForm.objects.count()
     lampshade = noun_forms(LAMPSHADE_SINGULAR, LAMPSHADE_PLURAL)
     assert forms_of("абажур") == without(lampshade, case=DATIVE)
     assert forms_of("аахенский", ADJECTIVE) == without(
@@ -459,9 +469,6 @@ def test_without_the_plural_only_singular_forms_are_seeded():
     out, err = seed("--limit", "2")
 
     assert err == ""
-    # SQLite silently drops a form without a case or number (INSERT OR IGNORE).
-    # Then the reported count is higher than the stored count.
-    assert reported_form_count(out) == WordForm.objects.count()
     lampshade = noun_forms(LAMPSHADE_SINGULAR, LAMPSHADE_PLURAL)
     assert forms_of("абажур") == without(lampshade, number=PLURAL)
     assert forms_of("аахенский", ADJECTIVE) == without(
@@ -476,9 +483,6 @@ def test_without_the_singular_only_plural_forms_are_seeded():
     out, err = seed("--limit", "2")
 
     assert err == ""
-    # SQLite silently drops a form without a case or number (INSERT OR IGNORE).
-    # Then the reported count is higher than the stored count.
-    assert reported_form_count(out) == WordForm.objects.count()
     lampshade = noun_forms(LAMPSHADE_SINGULAR, LAMPSHADE_PLURAL)
     assert forms_of("абажур") == without(lampshade, number=SINGULAR)
     assert forms_of("аба") == {}

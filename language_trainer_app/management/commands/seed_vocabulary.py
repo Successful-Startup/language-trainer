@@ -336,9 +336,10 @@ class Command(BaseCommand):
     # ── Bulk WordForm creation ─────────────────────────────────────────
 
     def _bulk_create_word_forms(self, morph, lemmas, pos_tag, word_map, ref):
-        """Generate all declension forms and bulk-insert them."""
+        """Generate all declension forms and bulk-insert them. Returns the new rows."""
         batch = []
-        total_created = 0
+        # bulk_create with ignore_conflicts returns every object, also the skipped ones.
+        forms_before = WordForm.objects.count()
 
         for idx, (normal_form, gender_tag, _animacy_tag) in enumerate(lemmas):
             base_form = normal_form.lower()
@@ -359,23 +360,21 @@ class Command(BaseCommand):
             batch.extend(forms)
 
             if len(batch) >= BATCH_SIZE:
-                total_created += self._flush_word_forms(batch)
+                self._flush_word_forms(batch)
                 batch = []
 
             if (idx + 1) % 5000 == 0:
                 self.stdout.write(f"    ... processed {idx + 1}/{len(lemmas)} lemmas")
 
         if batch:
-            total_created += self._flush_word_forms(batch)
+            self._flush_word_forms(batch)
 
-        return total_created
+        return WordForm.objects.count() - forms_before
 
     def _flush_word_forms(self, batch):
         """Insert a batch of WordForm objects, ignoring conflicts."""
         with transaction.atomic():
-            created = WordForm.objects.bulk_create(batch, ignore_conflicts=True)
-        count = len(created)
-        return count
+            WordForm.objects.bulk_create(batch, ignore_conflicts=True)
 
     def _get_best_parse(self, morph, word, target_pos, target_gender):
         """The parse with the POS and gender, else the first parse with the POS."""
