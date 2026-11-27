@@ -241,6 +241,19 @@ def test_pos_adj_seeds_only_adjectives():
 
 
 @pytest.mark.django_db
+def test_noun_gets_the_forms_of_its_own_gender():
+    # "аватара" (feminine) is also the genitive of "аватар" (masculine), and
+    # the dictionary lists that parse first. Noun 142 of the dictionary.
+    seed("--pos", "noun", "--limit", "142")
+
+    assert words_of(NOUN)["аватара"] == (FEMININE, INANIMATE)
+    assert forms_of("аватара") == noun_forms(
+        ["аватара", "аватары", "аватаре", "аватару", "аватарой", "аватаре"],
+        ["аватары", "аватар", "аватарам", "аватары", "аватарами", "аватарах"],
+    )
+
+
+@pytest.mark.django_db
 def test_thousands_of_nouns_are_written_in_batches_and_skip_unusable_words():
     out, err = seed("--pos", "noun", "--limit", "5000")
 
@@ -260,7 +273,6 @@ def test_thousands_of_nouns_are_written_in_batches_and_skip_unusable_words():
     morph = pymorphy3.MorphAnalyzer()
     skipped = {
         "а-конто": "has a hyphen",
-        "25-летие": "has digits",
         "б": "is one letter",
         "аарон": "is a name",
         "автовесы": "has no gender (plural only)",
@@ -319,6 +331,23 @@ def test_bigger_limit_adds_only_the_missing_words():
     assert list(words_of(ADJECTIVE)) == FIRST_ADJECTIVES[:3]
     assert forms_of("абажурчик")[("Именительный", SINGULAR, None)] == "абажурчик"
     assert output_lines(out).count("Created/found 3 words.") == 2
+
+
+@pytest.mark.django_db
+def test_word_that_the_teacher_added_is_kept_and_gets_no_seeded_forms():
+    Word.objects.create(
+        base_form="абажур",
+        part_of_speech=PartOfSpeech.objects.get(name=NOUN),
+        gender=Gender.objects.get(name=FEMININE),
+    )
+
+    out, err = seed("--pos", "noun", "--limit", "2")
+
+    assert err == ""
+    assert words_of(NOUN) == {"абажур": (FEMININE, None), "аба": (FEMININE, INANIMATE)}
+    assert forms_of("абажур") == {}
+    assert forms_of("аба") == noun_forms(ABA_SINGULAR, [])
+    assert "Created/found 2 words." in output_lines(out)
 
 
 @pytest.mark.django_db
