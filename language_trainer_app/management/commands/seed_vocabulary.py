@@ -350,8 +350,6 @@ class Command(BaseCommand):
 
             # Get the correct parse for this word
             parse = self._get_best_parse(morph, normal_form, pos_tag, gender_tag)
-            if parse is None:
-                continue
 
             if pos_tag == "NOUN":
                 forms = self._inflect_noun(parse, word_obj, ref)
@@ -380,19 +378,12 @@ class Command(BaseCommand):
         return count
 
     def _get_best_parse(self, morph, word, target_pos, target_gender):
-        """Find the pymorphy2 parse that matches the expected POS and gender."""
-        parses = morph.parse(word)
+        """The parse with the POS and gender, else the first parse with the POS."""
+        parses = [p for p in morph.parse(word) if str(p.tag.POS) == target_pos]
         for p in parses:
-            if str(p.tag.POS) == target_pos:
-                if target_gender and str(p.tag.gender) == target_gender:
-                    return p
-                if not target_gender:
-                    return p
-        # Fallback: return first parse with matching POS
-        for p in parses:
-            if str(p.tag.POS) == target_pos:
+            if str(p.tag.gender) == target_gender:
                 return p
-        return None
+        return parses[0]
 
     # ── Noun inflection ────────────────────────────────────────────────
 
