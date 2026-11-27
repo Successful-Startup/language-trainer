@@ -55,6 +55,11 @@ NUMBER_MAP = {
     "plur": "Множественное",
 }
 
+ANIMACY_MAP = {
+    "anim": "Anim",
+    "inan": "Inan",
+}
+
 # Words containing these characters are skipped (abbreviations, hyphenated, etc.)
 SKIP_RE = re.compile(r"[-\d./]")
 
@@ -265,9 +270,7 @@ class Command(BaseCommand):
             # Animacy is only meaningful for nouns; adjectives get None.
             animacy_tag = None
             if pos_tag == "NOUN":
-                raw_animacy = str(tag.animacy) if tag.animacy else None
-                if raw_animacy in ("anim", "inan"):
-                    animacy_tag = "Anim" if raw_animacy == "anim" else "Inan"
+                animacy_tag = ANIMACY_MAP.get(tag.animacy)
 
             seen.add(normal)
             lemmas.append((normal, gender_tag, animacy_tag))
