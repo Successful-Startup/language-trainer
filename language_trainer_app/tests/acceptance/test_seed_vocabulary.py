@@ -356,6 +356,24 @@ def test_word_that_the_teacher_added_is_kept_and_gets_no_seeded_forms():
 
 
 @pytest.mark.django_db
+def test_noun_with_the_same_base_form_does_not_block_the_adjective():
+    # Some adjectives share a base form with a noun, for example "бедный".
+    Word.objects.create(
+        base_form="аахенский",
+        part_of_speech=PartOfSpeech.objects.get(name=NOUN),
+        gender=Gender.objects.get(name=MASCULINE),
+    )
+
+    out, err = seed("--pos", "adj", "--limit", "1")
+
+    assert err == ""
+    assert words_of(NOUN) == {"аахенский": (MASCULINE, None)}
+    assert words_of(ADJECTIVE) == {"аахенский": (MASCULINE, None)}
+    assert forms_of("аахенский", ADJECTIVE) == adjective_forms(AACHEN)
+    assert forms_of("аахенский") == {}
+
+
+@pytest.mark.django_db
 def test_force_deletes_all_words_and_seeds_again():
     seed("--limit", "51")
 
