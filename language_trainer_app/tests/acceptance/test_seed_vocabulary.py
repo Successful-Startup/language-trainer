@@ -294,15 +294,16 @@ def test_thousands_of_nouns_are_written_in_batches_and_skip_unusable_words():
 
 
 @pytest.mark.django_db
-def test_second_run_with_more_than_100_words_says_already_seeded():
-    seed("--limit", "51")
+def test_second_run_with_101_words_says_already_seeded():
+    seed("--pos", "noun", "--limit", "51")
+    seed("--pos", "adj", "--limit", "50")
     form_count = WordForm.objects.count()
 
     out, err = seed("--limit", "60")
 
     assert err == ""
-    assert out == ("Vocabulary already seeded (102 words). Use --force to re-import.\n")
-    assert Word.objects.count() == 102
+    assert out == ("Vocabulary already seeded (101 words). Use --force to re-import.\n")
+    assert Word.objects.count() == 101
     assert WordForm.objects.count() == form_count
 
 
