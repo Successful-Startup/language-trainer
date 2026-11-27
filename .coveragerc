@@ -15,7 +15,7 @@ omit =
 # Replaces the default list, so "# pragma: no cover" excludes nothing.
 exclude_lines =
     a^
-# The gate only moves up. Each stage sets it to the value it reached.
+# CI checks the gate on the sum of the SQLite and PostgreSQL runs.
 fail_under = 100
 precision = 2
 show_missing = True
